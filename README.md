@@ -52,8 +52,19 @@ The working Python prototype from `Healther-Vision` has been preserved in `proto
 3. [Build Plan](docs/BUILD_PLAN.md)
 4. [Evaluation and Safety](docs/EVALUATION_AND_SAFETY.md)
 5. [Deployment](docs/DEPLOYMENT.md)
+6. [One-Bed Agent Harness and Medplum Model](docs/ONE_BED_AGENT_HARNESS_AND_MEDPLUM_MODEL.md)
 
 The one-bed HTML plan is the active build target. The broader PRD and architecture docs are still useful, but the immediate product is a single private-room remote monitoring console with live video, event detection, evidence review, VLM interpretation, and a grounded assistant.
+
+Prototype console:
+
+```bash
+cd prototypes/healther-vision
+source .venv/bin/activate
+python -m uvicorn --app-dir src healther_vision.app:app --reload --port 8790
+```
+
+Then open `http://localhost:8790/monitor`.
 
 ## Current Status
 

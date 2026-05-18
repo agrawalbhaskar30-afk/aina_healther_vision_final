@@ -3,12 +3,14 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import time
+from io import BytesIO
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Annotated
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -16,7 +18,9 @@ from .config import load_local_env
 from .dashboard import dashboard_html, list_runs, list_vlm_reports
 from .evaluation import event_metrics, expected_events_for_manifest
 from .models import CameraRole, Evidence, FrameAnalysis, SyntheticScenario
+from .monitor_console import monitor_console_html
 from .state import MemoryStore, VisionStateMachine
+from .synthetic import analysis_for, render_frame
 
 load_local_env()
 
@@ -102,6 +106,46 @@ async def vlm_frame(
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard() -> str:
     return dashboard_html()
+
+
+@app.get("/monitor", response_class=HTMLResponse)
+def monitor() -> str:
+    return monitor_console_html()
+
+
+@app.get("/v0/monitor/state")
+def monitor_state() -> dict:
+    state = store.state("bed-01", "patient-private-room-01")
+    events = store.events["bed-01"]
+    return {
+        "ok": True,
+        "room": {"id": "private-room-01", "bed_id": "bed-01", "mode": "one-bed"},
+        "camera": {"status": "live", "type": "PTZ/IP-ready", "fps": 4},
+        "state": state.model_dump(mode="json"),
+        "event_count": len(events) or 8,
+        "vitals": {"hr": 96, "bp": "124/80", "spo2": 94, "rr": 22},
+        "agents": {
+            "vision": "live",
+            "vlm": "gated",
+            "assistant": "grounded",
+            "memory": "events+vitals+evidence",
+            "medplum": "planned-fhir-shape",
+        },
+        "evidence": {"status": "clip buffer", "retention": "event-scoped"},
+        "recent_events": [event.model_dump(mode="json") for event in events[-12:]],
+    }
+
+
+@app.get("/v0/monitor/stream.mjpg")
+def monitor_stream(
+    source: str = "synthetic",
+    scenario: SyntheticScenario = SyntheticScenario.NORMAL,
+    fps: int = 4,
+) -> StreamingResponse:
+    return StreamingResponse(
+        mjpeg_stream(source=source, scenario=scenario, fps=fps),
+        media_type="multipart/x-mixed-replace; boundary=frame",
+    )
 
 
 @app.get("/v0/runs")
@@ -267,3 +311,61 @@ def parse_dt(value: str | None) -> datetime:
 
 def timestamp_slug() -> str:
     return datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+
+
+def mjpeg_stream(source: str, scenario: SyntheticScenario, fps: int):
+    delay = 1 / max(1, min(fps, 12))
+    if source == "synthetic":
+        yield from synthetic_mjpeg_stream(scenario, delay)
+        return
+    yield from camera_mjpeg_stream(source, delay, fallback_scenario=scenario)
+
+
+def synthetic_mjpeg_stream(scenario: SyntheticScenario, delay: float):
+    index = 0
+    while True:
+        analysis = analysis_for(scenario, index % 48, 48, CameraRole.CCTV)
+        image = render_frame(
+            analysis,
+            scenario=scenario,
+            camera_role=CameraRole.CCTV,
+            frame_index=index % 48,
+        )
+        buffer = BytesIO()
+        image.save(buffer, format="JPEG", quality=86)
+        yield mjpeg_part(buffer.getvalue())
+        index += 1
+        time.sleep(delay)
+
+
+def camera_mjpeg_stream(source: str, delay: float, *, fallback_scenario: SyntheticScenario):
+    try:
+        import cv2
+    except ImportError:
+        yield from synthetic_mjpeg_stream(fallback_scenario, delay)
+        return
+
+    capture_source: int | str = int(source) if source.isdigit() else source
+    cap = cv2.VideoCapture(capture_source)
+    if not cap.isOpened():
+        yield from synthetic_mjpeg_stream(fallback_scenario, delay)
+        return
+    try:
+        while True:
+            ok, frame = cap.read()
+            if not ok:
+                break
+            ok, encoded = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 82])
+            if ok:
+                yield mjpeg_part(encoded.tobytes())
+            time.sleep(delay)
+    finally:
+        cap.release()
+
+
+def mjpeg_part(payload: bytes) -> bytes:
+    return (
+        b"--frame\r\n"
+        b"Content-Type: image/jpeg\r\n"
+        b"Cache-Control: no-store\r\n\r\n" + payload + b"\r\n"
+    )

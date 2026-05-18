@@ -18,13 +18,14 @@ This repo is deliberately separate from the ambient/EHR assistant. It is a sandb
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
-uvicorn healther_vision.app:app --reload --port 8790
+python -m uvicorn --app-dir src healther_vision.app:app --reload --port 8790
 ```
 
 Open:
 
 ```text
 http://localhost:8790/docs
+http://localhost:8790/monitor
 ```
 
 ## Generate Synthetic Frames

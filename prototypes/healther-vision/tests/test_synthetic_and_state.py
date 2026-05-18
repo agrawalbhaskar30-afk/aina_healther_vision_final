@@ -1,0 +1,166 @@
+from __future__ import annotations
+
+import json
+from datetime import datetime, timedelta, timezone
+
+from fastapi.testclient import TestClient
+
+from healther_vision.imagegen_eval import evaluate_imagegen_report, imagegen_ground_truths, latency_summary
+from healther_vision.app import app
+from healther_vision.models import BedState, CameraRole, EventType, FrameAnalysis, IVState, SyntheticScenario
+from healther_vision.state import VisionStateMachine, fresh_state
+from healther_vision.synthetic import analysis_for, generate_scenario
+
+
+def test_synthetic_generator_writes_frames_and_manifest(tmp_path):
+    manifest = generate_scenario(SyntheticScenario.FALL, tmp_path, frames=6)
+    assert len(manifest.frames) == 6
+    assert (tmp_path / "frame_0000.png").exists()
+    assert (tmp_path / "manifest.json").exists()
+    loaded = json.loads((tmp_path / "manifest.json").read_text())
+    assert loaded["scenario"] == "fall"
+
+
+def test_fall_confirms_after_persisting_on_floor():
+    machine = VisionStateMachine()
+    state = fresh_state("B4", "pat-demo")
+    t0 = datetime.now(timezone.utc)
+    analysis = FrameAnalysis(
+        bed_state=BedState.ON_FLOOR,
+        bed_state_confidence=0.9,
+        fall={"suspected": True, "confidence": 0.86},
+    )
+    state, events = machine.process(
+        state,
+        analysis,
+        at=t0,
+        bed_id="B4",
+        patient_id="pat-demo",
+        camera_id="cam-1",
+    )
+    assert EventType.FALL_SUSPECTED in {e.event_type for e in events}
+    state, events = machine.process(
+        state,
+        analysis,
+        at=t0 + timedelta(seconds=5),
+        bed_id="B4",
+        patient_id="pat-demo",
+        camera_id="cam-1",
+    )
+    assert EventType.FALL_CONFIRMED in {e.event_type for e in events}
+
+
+def test_vitals_alert_after_repeated_abnormal_readings():
+    machine = VisionStateMachine()
+    state = fresh_state("B4", "pat-demo")
+    t0 = datetime.now(timezone.utc)
+    events = []
+    for i in range(3):
+        state, events = machine.process(
+            state,
+            analysis_for(SyntheticScenario.VITALS_ALERT, i, 3, camera_role=CameraRole.CCTV),
+            at=t0 + timedelta(seconds=i),
+            bed_id="B4",
+            patient_id="pat-demo",
+            camera_id="cam-1",
+        )
+    assert EventType.VITALS_OUT_OF_RANGE in {e.event_type for e in events}
+
+
+def test_iv_near_empty_event():
+    machine = VisionStateMachine()
+    state = fresh_state("B4", "pat-demo")
+    t0 = datetime.now(timezone.utc)
+    analysis = FrameAnalysis(iv={"state": IVState.NEAR_EMPTY, "confidence": 0.84, "bag_fill_percent": 8})
+    state, events = machine.process(
+        state,
+        analysis,
+        at=t0,
+        bed_id="B4",
+        patient_id="pat-demo",
+        camera_id="cam-1",
+    )
+    assert EventType.IV_NEAR_EMPTY in {e.event_type for e in events}
+
+
+def test_api_generates_scenario_and_processes_frame():
+    client = TestClient(app)
+    generated = client.post(
+        "/v0/synthetic/scenario",
+        json={"scenario": "fall", "frames": 3, "camera_role": "cctv", "name": "pytest-fall"},
+    )
+    assert generated.status_code == 200
+    analysis = generated.json()["manifest"]["frames"][2]["analysis"]
+    response = client.post(
+        "/v0/frame",
+        data={
+            "bed_id": "B4",
+            "patient_id": "pat-demo",
+            "camera_id": "cam-1",
+            "analysis": json.dumps(analysis),
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["ok"] is True
+
+
+def test_api_replays_synthetic_scenario():
+    client = TestClient(app)
+    response = client.post(
+        "/v0/synthetic/replay",
+        json={
+            "scenario": "fall",
+            "frames": 12,
+            "camera_role": "cctv",
+            "name": "pytest-replay-fall",
+            "bed_id": "B99",
+            "patient_id": "pat-replay",
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["ok"] is True
+    emitted = {event["event_type"] for event in body["events"]}
+    assert "FALL_SUSPECTED" in emitted
+    assert "FALL_CONFIRMED" in emitted
+
+
+def test_vlm_status_uses_env_without_exposing_keys():
+    client = TestClient(app)
+    response = client.get("/v0/vlm/status")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["ok"] is True
+    assert body["provider"] in {"truth", "openai", "gemini"}
+    assert "configured" in body["openai"]
+    assert "model" in body["openai"]
+    assert "api_key" not in json.dumps(body).lower()
+
+
+def test_imagegen_evaluator_reports_confusion_and_latency():
+    truths = imagegen_ground_truths()
+    expected = truths["cctv_04_staff_iv_near_empty.png"]
+    actual = expected.model_copy(deep=True)
+    actual.iv.state = IVState.RUNNING
+    report = {
+        "results": [
+            {
+                "filename": "cctv_04_staff_iv_near_empty.png",
+                "ok": True,
+                "latency_seconds": 1.25,
+                "analysis": actual.model_dump(mode="json"),
+            }
+        ]
+    }
+    metrics = evaluate_imagegen_report(report)
+    assert metrics["field_accuracy"]["iv_state"] == 0
+    assert metrics["confusion_matrices"]["iv_state"]["near_empty"]["running"] == 1
+    assert metrics["latency_seconds"]["median"] == 1.25
+    assert metrics["mismatches"][0]["field"] == "iv_state"
+
+
+def test_latency_summary_handles_empty_and_populated_values():
+    assert latency_summary([])["count"] == 0
+    summary = latency_summary([1.0, 2.0, 3.0])
+    assert summary["mean"] == 2.0
+    assert summary["median"] == 2.0

@@ -46,11 +46,14 @@ The working Python prototype from `Healther-Vision` has been preserved in `proto
 
 ## Start With These Docs
 
+0. [One Bed Remote Monitoring Plan](docs/ONE_BED_REMOTE_MONITORING_PLAN.html)
 1. [Product Requirements](docs/PRD.md)
 2. [Architecture](docs/ARCHITECTURE.md)
 3. [Build Plan](docs/BUILD_PLAN.md)
 4. [Evaluation and Safety](docs/EVALUATION_AND_SAFETY.md)
 5. [Deployment](docs/DEPLOYMENT.md)
+
+The one-bed HTML plan is the active build target. The broader PRD and architecture docs are still useful, but the immediate product is a single private-room remote monitoring console with live video, event detection, evidence review, VLM interpretation, and a grounded assistant.
 
 ## Current Status
 

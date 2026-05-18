@@ -12,6 +12,10 @@ AINA Healther Vision Final
 
 Build a deployable, clinician-reviewed ambient video monitoring product for hospitals that detects patient safety and workflow events, routes alerts, creates evidence, and enriches the patient record.
 
+## Current Build Target
+
+The immediate build target is narrower than the full product vision: one private room, one monitored bed, one live remote video feed, one event timeline, evidence capture, VLM interpretation, and one grounded assistant. See `docs/ONE_BED_REMOTE_MONITORING_PLAN.html` for the active implementation spec.
+
 ## Product Thesis
 
 The most valuable part of the AINA-style experience is not a single computer-vision model. It is the closed workflow loop:

@@ -1,0 +1,1075 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AINA Healther Vision - One Bed Remote Monitoring Build Plan</title>
+  <style>
+    :root {
+      --bg: #f7f8fa;
+      --ink: #17202a;
+      --muted: #5f6b7a;
+      --panel: #ffffff;
+      --line: #dbe1e8;
+      --soft: #edf2f7;
+      --blue: #1f6feb;
+      --teal: #0f766e;
+      --amber: #b7791f;
+      --red: #c53030;
+      --green: #2f855a;
+      --violet: #5a4fcf;
+      --shadow: 0 12px 30px rgba(23, 32, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    header {
+      background: #111827;
+      color: #ffffff;
+      padding: 56px 32px 44px;
+      border-bottom: 6px solid var(--teal);
+    }
+
+    .wrap {
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 0 0 14px;
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 900px;
+      margin: 0;
+      color: #d1d5db;
+      font-size: 20px;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 6px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      color: #eef2ff;
+      background: rgba(255, 255, 255, 0.07);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    main {
+      padding: 30px 0 72px;
+    }
+
+    section {
+      margin: 18px 0;
+      padding: 26px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 28px;
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 24px 0 10px;
+      font-size: 19px;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 12px;
+    }
+
+    ul, ol {
+      margin: 10px 0 0;
+      padding-left: 24px;
+    }
+
+    li {
+      margin: 7px 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 14px;
+      background: #ffffff;
+    }
+
+    th, td {
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f1f5f9;
+      font-weight: 800;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+      padding: 1px 4px;
+      border-radius: 4px;
+      background: #eef2f7;
+    }
+
+    pre {
+      overflow-x: auto;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #0f172a;
+      color: #e5e7eb;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .card {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfe;
+    }
+
+    .card h3 {
+      margin-top: 0;
+    }
+
+    .callout {
+      padding: 15px 16px;
+      border-left: 5px solid var(--blue);
+      background: #eff6ff;
+      border-radius: 6px;
+    }
+
+    .callout.warn {
+      border-left-color: var(--amber);
+      background: #fff8eb;
+    }
+
+    .callout.danger {
+      border-left-color: var(--red);
+      background: #fff1f1;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 4px 8px;
+      border-radius: 5px;
+      background: var(--soft);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .tag.red { color: var(--red); background: #fff1f1; }
+    .tag.amber { color: var(--amber); background: #fff8eb; }
+    .tag.blue { color: var(--blue); background: #eff6ff; }
+    .tag.green { color: var(--green); background: #ecfdf3; }
+    .tag.violet { color: var(--violet); background: #f1f0ff; }
+
+    .diagram {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(140px, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .node {
+      min-height: 92px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .node strong {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .arrow {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .screen {
+      display: grid;
+      grid-template-columns: minmax(0, 1.9fr) minmax(290px, 0.9fr);
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      background: #0b1020;
+      color: #e5e7eb;
+    }
+
+    .video {
+      min-height: 340px;
+      border-radius: 6px;
+      background:
+        linear-gradient(135deg, rgba(20, 184, 166, 0.15), rgba(37, 99, 235, 0.18)),
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.04), rgba(255,255,255,0.04) 1px, transparent 1px, transparent 5px),
+        #111827;
+      border: 1px solid #374151;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bed-zone {
+      position: absolute;
+      left: 12%;
+      right: 16%;
+      bottom: 18%;
+      height: 38%;
+      border: 2px solid rgba(20, 184, 166, 0.75);
+      border-radius: 10px;
+      background: rgba(20, 184, 166, 0.08);
+    }
+
+    .event-badge {
+      position: absolute;
+      left: 24px;
+      bottom: 24px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      background: #f59e0b;
+      color: #111827;
+      font-weight: 900;
+    }
+
+    .timeline {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 78px;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.45);
+    }
+
+    .side {
+      display: grid;
+      gap: 10px;
+    }
+
+    .status-box {
+      padding: 12px;
+      border: 1px solid #374151;
+      border-radius: 7px;
+      background: #111827;
+    }
+
+    .status-box strong {
+      display: block;
+      font-size: 20px;
+      margin-top: 3px;
+    }
+
+    footer {
+      padding: 30px 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 900px) {
+      .grid.two,
+      .grid.three,
+      .diagram,
+      .screen {
+        grid-template-columns: 1fr;
+      }
+
+      header {
+        padding: 38px 20px 30px;
+      }
+
+      section {
+        padding: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>One Bed Remote Monitoring Build Plan</h1>
+      <p class="subtitle">A focused build spec for the actual product: one private room, one monitored bed, live remote video, event detection, evidence capture, VLM interpretation, and a grounded chat assistant.</p>
+      <div class="meta">
+        <span class="pill">Scope: one private room</span>
+        <span class="pill">Primary surface: remote monitoring console</span>
+        <span class="pill">Mode: clinician-in-the-loop</span>
+        <span class="pill">Version: May 2026 reset</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section>
+      <h2>1. What We Are Actually Building</h2>
+      <p>This product is a remote patient monitoring system for one private hospital room. The remote user must be able to see the live room feed, understand what is happening, review detected events, inspect evidence, and ask a grounded assistant questions about the patient and the room.</p>
+      <div class="callout">
+        <strong>The product loop:</strong> live video feed -> detection -> event timeline -> evidence clip -> VLM review -> grounded assistant -> staff alert or chart note.
+      </div>
+      <p>This means the live video feed is not a nice-to-have. It is the base layer. Detection, VLM, alerts, and assistant all sit on top of the remote monitoring feed.</p>
+
+      <h3>V1 Now Means One Bed, Not A Hospital Platform</h3>
+      <ul>
+        <li>One private room.</li>
+        <li>One bed-zone polygon.</li>
+        <li>One primary room camera feed, usually RTSP/IP camera or a local webcam during development.</li>
+        <li>Optional second camera later for monitor close-up or round/tablet capture.</li>
+        <li>One remote monitoring dashboard.</li>
+        <li>One patient timeline.</li>
+        <li>One assistant grounded in video events, OCR vitals, patient context, and evidence.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>2. Product Surfaces</h2>
+      <div class="grid three">
+        <div class="card">
+          <h3>Remote Monitor Console</h3>
+          <p>The main screen. Shows live video, bed state, vitals, active alerts, event timeline, evidence, and Ask AINA.</p>
+          <span class="tag blue">must build now</span>
+        </div>
+        <div class="card">
+          <h3>Edge Room Service</h3>
+          <p>Runs near the camera. Pulls video, samples frames, detects events, saves clips, and streams video to the remote console.</p>
+          <span class="tag green">must build now</span>
+        </div>
+        <div class="card">
+          <h3>Review + Assistant Layer</h3>
+          <p>Turns detected events and evidence into structured explanations, summaries, and chat answers.</p>
+          <span class="tag violet">must build now</span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>3. Remote Monitoring Console Layout</h2>
+      <p>The first screen should look like a monitoring product, not a landing page. The remote clinician should immediately see the room.</p>
+
+      <div class="screen" aria-label="Conceptual remote monitoring console">
+        <div class="video">
+          <div class="bed-zone"></div>
+          <div class="timeline"></div>
+          <div class="event-badge">No movement: 2h 42m</div>
+        </div>
+        <div class="side">
+          <div class="status-box">
+            <span class="small">BED STATE</span>
+            <strong>In Bed</strong>
+          </div>
+          <div class="status-box">
+            <span class="small">CAMERA</span>
+            <strong>Live</strong>
+          </div>
+          <div class="status-box">
+            <span class="small">VITALS OCR</span>
+            <strong>HR 96 | SpO2 94</strong>
+          </div>
+          <div class="status-box">
+            <span class="small">ASSISTANT</span>
+            <strong>Ask AINA</strong>
+          </div>
+        </div>
+      </div>
+
+      <h3>Required UI Regions</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Region</th>
+            <th>What It Shows</th>
+            <th>Why It Matters</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Live room feed</td>
+            <td>WebRTC or low-latency HLS stream from room camera.</td>
+            <td>Remote monitoring starts with seeing the patient and room.</td>
+          </tr>
+          <tr>
+            <td>Overlay layer</td>
+            <td>Bed zone, patient bbox, staff bbox, monitor crop, IV crop, alert banners.</td>
+            <td>Shows what the system is paying attention to.</td>
+          </tr>
+          <tr>
+            <td>State panel</td>
+            <td>Bed state, camera health, detection health, sync health, last event.</td>
+            <td>Prevents blind trust in the AI layer.</td>
+          </tr>
+          <tr>
+            <td>Vitals panel</td>
+            <td>OCR readings, confidence, trend, abnormal streaks.</td>
+            <td>Monitor OCR is one of the core clinical signals.</td>
+          </tr>
+          <tr>
+            <td>Event timeline</td>
+            <td>Detected events with icons, timestamps, severity, review state.</td>
+            <td>The product is event recording plus review, not just a camera viewer.</td>
+          </tr>
+          <tr>
+            <td>Evidence drawer</td>
+            <td>Still frame, clip, rule trace, VLM output, review actions.</td>
+            <td>Every alert must be explainable and reviewable.</td>
+          </tr>
+          <tr>
+            <td>Ask AINA panel</td>
+            <td>Chat grounded in events, vitals, patient context, and evidence.</td>
+            <td>The assistant becomes useful because it can see the event history.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>4. System Architecture For One Bed</h2>
+      <div class="diagram">
+        <div class="node">
+          <strong>Camera Feed</strong>
+          RTSP, webcam, or tablet camera.
+          <div class="arrow">source video</div>
+        </div>
+        <div class="node">
+          <strong>Edge Service</strong>
+          Ingest, stream, sample frames, store clips.
+          <div class="arrow">frames + stream</div>
+        </div>
+        <div class="node">
+          <strong>Detection Layer</strong>
+          Motion, pose, OCR, IV, staff, bed state.
+          <div class="arrow">candidate events</div>
+        </div>
+        <div class="node">
+          <strong>VLM Layer</strong>
+          Confirms ambiguous events and explains scenes.
+          <div class="arrow">structured interpretation</div>
+        </div>
+        <div class="node">
+          <strong>Remote Console</strong>
+          Live view, timeline, review, chat, alerts.
+        </div>
+      </div>
+
+      <h3>Recommended One-Bed Runtime</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Layer</th>
+            <th>Build Choice</th>
+            <th>Reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Video ingest</td>
+            <td>Python edge service using OpenCV/GStreamer or FFmpeg.</td>
+            <td>Fast to build, works with RTSP and video files.</td>
+          </tr>
+          <tr>
+            <td>Remote live view</td>
+            <td>WebRTC for low latency. HLS fallback for simpler deployments.</td>
+            <td>Remote monitoring requires actually seeing the room from elsewhere.</td>
+          </tr>
+          <tr>
+            <td>Backend</td>
+            <td>FastAPI.</td>
+            <td>Simple event APIs, streaming hooks, and Python AI ecosystem.</td>
+          </tr>
+          <tr>
+            <td>Frontend</td>
+            <td>Next.js or a fast React app.</td>
+            <td>Command console needs responsive live UI and event review.</td>
+          </tr>
+          <tr>
+            <td>State store</td>
+            <td>Postgres in cloud; SQLite queue on edge.</td>
+            <td>Cloud history plus offline edge reliability.</td>
+          </tr>
+          <tr>
+            <td>Object storage</td>
+            <td>S3/Supabase Storage/MinIO for evidence clips.</td>
+            <td>Events need reviewable video evidence.</td>
+          </tr>
+          <tr>
+            <td>Realtime</td>
+            <td>WebSocket or Supabase Realtime.</td>
+            <td>Remote console must update immediately.</td>
+          </tr>
+          <tr>
+            <td>Assistant</td>
+            <td>LLM router with tools over events, vitals, clips, patient context.</td>
+            <td>Chat should be grounded and provider-flexible.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>5. Video Feed: The First Real Requirement</h2>
+      <p>The first build must prove that a remote user can see the private room video feed from another machine/browser.</p>
+
+      <h3>Video Feed Requirements</h3>
+      <ul>
+        <li>Connect to a camera source: webcam, RTSP camera, phone camera RTSP app, or video-file simulator.</li>
+        <li>Display the live feed in the remote monitoring console.</li>
+        <li>Show connection state: live, reconnecting, offline, low FPS.</li>
+        <li>Allow snapshots for evidence capture.</li>
+        <li>Maintain a rolling clip buffer, for example 30 seconds before and 30 seconds after an event.</li>
+        <li>Support privacy masking later, but do not block the first feed milestone on it.</li>
+      </ul>
+
+      <h3>WebRTC vs HLS</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Option</th>
+            <th>Use It When</th>
+            <th>Tradeoff</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>WebRTC</td>
+            <td>You need low latency and possible two-way communication.</td>
+            <td>More setup, but best remote monitoring feel.</td>
+          </tr>
+          <tr>
+            <td>HLS</td>
+            <td>You want simpler browser playback.</td>
+            <td>Higher latency, usually several seconds.</td>
+          </tr>
+          <tr>
+            <td>MJPEG</td>
+            <td>You want a quick development proof.</td>
+            <td>Simple, but inefficient and not final.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <strong>Build order correction:</strong> do not start with the chatbot. Start with camera feed visible remotely, then event timeline, then detection, then VLM, then chat assistant.
+      </div>
+    </section>
+
+    <section>
+      <h2>6. Detection Scope For The One-Bed Build</h2>
+      <p>The detection system should produce candidate events. Some events can be deterministic, some need VLM confirmation, and some require human review.</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>Signal</th>
+            <th>Trigger</th>
+            <th>Output</th>
+            <th>Review</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="tag blue">bed state</span></td>
+            <td>Person position vs bed polygon.</td>
+            <td>In bed, sitting edge, out of bed, on floor.</td>
+            <td>Timeline event and state panel update.</td>
+            <td>Review only if critical or uncertain.</td>
+          </tr>
+          <tr>
+            <td><span class="tag red">on floor / fall</span></td>
+            <td>Pose, bbox height, floor zone, movement pattern.</td>
+            <td>Patient centroid below bed/floor line or horizontal posture near floor.</td>
+            <td>Critical alert, evidence clip, VLM confirmation.</td>
+            <td>Always review.</td>
+          </tr>
+          <tr>
+            <td><span class="tag amber">no movement</span></td>
+            <td>Motion magnitude in patient region.</td>
+            <td>No meaningful movement for configured threshold.</td>
+            <td>Warning event and timeline marker.</td>
+            <td>Review if prolonged or paired with abnormal vitals.</td>
+          </tr>
+          <tr>
+            <td><span class="tag amber">distress / breathing problem</span></td>
+            <td>Chest motion, posture, agitation, face/upper body cues, monitor vitals.</td>
+            <td>Elevated work of breathing, repeated abnormal RR/SpO2, visible distress.</td>
+            <td>Warning or critical event with explanation.</td>
+            <td>Always review before clinical wording.</td>
+          </tr>
+          <tr>
+            <td><span class="tag green">staff presence</span></td>
+            <td>Second person in room, uniform cues, region occupancy.</td>
+            <td>Staff enters/exits or no staff visit for threshold.</td>
+            <td>Care-gap log and visit history.</td>
+            <td>Review for compliance reports.</td>
+          </tr>
+          <tr>
+            <td><span class="tag violet">monitor OCR</span></td>
+            <td>Monitor crop OCR.</td>
+            <td>Scheduled every 30-60 seconds or when monitor visible.</td>
+            <td>HR, BP, SpO2, RR readings with confidence.</td>
+            <td>Review low-confidence or abnormal values.</td>
+          </tr>
+          <tr>
+            <td><span class="tag amber">oxygen interruption</span></td>
+            <td>Visible cannula/mask/tubing, SpO2 trend, staff intervention.</td>
+            <td>Mask/cannula displaced, oxygen tube disconnected, SpO2 drop.</td>
+            <td>Warning event with evidence.</td>
+            <td>Always review initially.</td>
+          </tr>
+          <tr>
+            <td><span class="tag amber">IV status</span></td>
+            <td>IV bag crop, pump screen, line visibility.</td>
+            <td>Near empty, stopped, disconnected, occluded.</td>
+            <td>Info/warning event.</td>
+            <td>Review until model is reliable.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>7. VLM Layer</h2>
+      <p>The VLM layer should not run on every frame. It should be called when the deterministic system needs help, or at a low scheduled interval for scene summaries.</p>
+
+      <h3>When To Call The VLM</h3>
+      <ul>
+        <li>Candidate fall/on-floor event.</li>
+        <li>Possible respiratory distress or visible breathing problem.</li>
+        <li>Oxygen tubing/mask/cannula appears displaced.</li>
+        <li>IV state is unclear.</li>
+        <li>Staff/patient role is ambiguous.</li>
+        <li>Every 60-120 seconds for a low-cost room summary if budget allows.</li>
+      </ul>
+
+      <h3>VLM Output Contract</h3>
+      <pre>{
+  "scene_summary": "Patient is lying in bed, oxygen cannula visible, no staff present.",
+  "patient_state": "in_bed",
+  "distress": {
+    "suspected": false,
+    "reason": "No visible labored breathing; SpO2 OCR is 96 if accepted."
+  },
+  "fall_or_floor": {
+    "suspected": false,
+    "confidence": 0.08
+  },
+  "oxygen": {
+    "visible": true,
+    "issue_suspected": false,
+    "reason": "Cannula appears positioned on face."
+  },
+  "iv": {
+    "visible": true,
+    "state": "unclear",
+    "reason": "Bag is partly occluded."
+  },
+  "staff_present": false,
+  "recommended_event": null,
+  "needs_human_review": false
+}</pre>
+
+      <div class="callout">
+        <strong>Key rule:</strong> VLM output becomes evidence and explanation. It does not directly become clinical truth until reviewed or corroborated by deterministic signals.
+      </div>
+    </section>
+
+    <section>
+      <h2>8. Chat Assistant Layer</h2>
+      <p>The assistant should answer questions using the video-derived event timeline, vitals OCR, evidence clips, patient context, and notes. It should not guess from memory.</p>
+
+      <h3>Assistant Tools</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Tool</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>get_current_room_state</code></td>
+            <td>Returns live bed state, staff presence, camera health, active alerts.</td>
+          </tr>
+          <tr>
+            <td><code>get_event_timeline</code></td>
+            <td>Returns events for selected time window.</td>
+          </tr>
+          <tr>
+            <td><code>get_vitals_trend</code></td>
+            <td>Returns accepted OCR vitals and abnormal streaks.</td>
+          </tr>
+          <tr>
+            <td><code>get_event_evidence</code></td>
+            <td>Returns still frame, clip URL, rule trace, VLM output, review status.</td>
+          </tr>
+          <tr>
+            <td><code>create_review_note_draft</code></td>
+            <td>Creates a draft note for human sign-off.</td>
+          </tr>
+          <tr>
+            <td><code>send_alert</code></td>
+            <td>Routes a staff alert only after user confirmation or configured policy.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Questions It Must Handle</h3>
+      <ul>
+        <li>"What is happening in the room right now?"</li>
+        <li>"Has the patient moved in the last 3 hours?"</li>
+        <li>"Show me the evidence for the fall alert."</li>
+        <li>"Was staff present after the oxygen issue?"</li>
+        <li>"Summarize overnight events."</li>
+        <li>"Did SpO2 drop before the distress alert?"</li>
+        <li>"What should I review first?"</li>
+      </ul>
+
+      <h3>Assistant Guardrails</h3>
+      <ul>
+        <li>Always cite event IDs, vitals timestamps, or evidence clips for factual claims.</li>
+        <li>Say "not visible" or "not enough evidence" when the camera view is insufficient.</li>
+        <li>Never say an alert was sent unless the alert system confirms delivery.</li>
+        <li>Never create a final clinical order. Create a draft for clinician review.</li>
+        <li>Separate observed facts from model interpretation.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>9. Evidence And Review Workflow</h2>
+      <p>Every important detection should become a reviewable event, not just a notification.</p>
+
+      <h3>Event Lifecycle</h3>
+      <ol>
+        <li>Frame or motion pattern creates a candidate event.</li>
+        <li>State machine checks thresholds and history.</li>
+        <li>Evidence service saves still frame and rolling clip.</li>
+        <li>VLM confirms or explains if needed.</li>
+        <li>Event appears on remote console timeline.</li>
+        <li>Alert routes if severity requires it.</li>
+        <li>Human reviews: true positive, false positive, unclear, resolved.</li>
+        <li>Assistant can summarize the event with citations.</li>
+        <li>Reviewed event can become a chart note draft.</li>
+      </ol>
+
+      <h3>Review Actions</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Action</th>
+            <th>Meaning</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Acknowledge</td>
+            <td>User saw the event and takes responsibility for next step.</td>
+          </tr>
+          <tr>
+            <td>Mark true positive</td>
+            <td>Event was correct.</td>
+          </tr>
+          <tr>
+            <td>Mark false positive</td>
+            <td>Event was incorrect and should be used for evaluation.</td>
+          </tr>
+          <tr>
+            <td>Escalate</td>
+            <td>Notify assigned nurse, station, or remote clinician.</td>
+          </tr>
+          <tr>
+            <td>Create note draft</td>
+            <td>Draft a timeline note, never final chart write without sign-off.</td>
+          </tr>
+          <tr>
+            <td>Mute rule temporarily</td>
+            <td>Pause a noisy rule for a defined time and reason.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>10. Data Model For The One-Bed MVP</h2>
+      <p>Keep the first schema small but real. It should support remote monitoring, evidence, detection, VLM, and assistant grounding.</p>
+
+      <pre>Room
+  id
+  name
+  camera_id
+  bed_zone_polygon
+
+Patient
+  id
+  display_name
+  age
+  sex
+  clinical_summary
+  risk_flags
+
+Camera
+  id
+  source_url
+  stream_status
+  last_frame_at
+  fps
+
+RoomState
+  room_id
+  patient_id
+  bed_state
+  staff_present
+  last_movement_at
+  last_staff_seen_at
+  active_alerts
+  updated_at
+
+Event
+  id
+  type
+  severity
+  status
+  confidence
+  started_at
+  ended_at
+  rule_trace
+  vlm_interpretation_id
+  evidence_asset_ids
+
+EvidenceAsset
+  id
+  event_id
+  kind
+  url
+  captured_at
+  retention_until
+
+VitalReading
+  id
+  kind
+  value
+  unit
+  confidence
+  source_crop_id
+  accepted
+  captured_at
+
+AssistantMessage
+  id
+  role
+  content
+  cited_event_ids
+  cited_vital_ids
+  cited_evidence_ids
+  created_at</pre>
+    </section>
+
+    <section>
+      <h2>11. APIs To Build First</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Endpoint</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>GET /health</code></td>
+            <td>API status.</td>
+          </tr>
+          <tr>
+            <td><code>GET /room/current</code></td>
+            <td>Current one-bed room state.</td>
+          </tr>
+          <tr>
+            <td><code>GET /room/stream</code></td>
+            <td>Returns stream metadata or playback token.</td>
+          </tr>
+          <tr>
+            <td><code>POST /events</code></td>
+            <td>Edge posts detected event.</td>
+          </tr>
+          <tr>
+            <td><code>GET /events</code></td>
+            <td>Timeline query.</td>
+          </tr>
+          <tr>
+            <td><code>GET /events/{id}</code></td>
+            <td>Event detail with evidence and VLM interpretation.</td>
+          </tr>
+          <tr>
+            <td><code>POST /events/{id}/review</code></td>
+            <td>Human review action.</td>
+          </tr>
+          <tr>
+            <td><code>POST /vitals</code></td>
+            <td>Edge posts OCR vitals.</td>
+          </tr>
+          <tr>
+            <td><code>GET /vitals/trend</code></td>
+            <td>Vitals trend for assistant and UI.</td>
+          </tr>
+          <tr>
+            <td><code>POST /assistant/chat</code></td>
+            <td>Grounded chat using tool access.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>12. Build Sequence For Right Now</h2>
+      <p>This is not a generic product roadmap. This is the immediate order for the one-bed build.</p>
+
+      <ol>
+        <li><strong>Remote video proof:</strong> one camera source appears in the browser from another device or browser session.</li>
+        <li><strong>Room state shell:</strong> console shows camera live/offline, bed state placeholder, and timeline placeholder.</li>
+        <li><strong>Evidence capture:</strong> user can click "capture evidence"; system stores a still and short clip.</li>
+        <li><strong>Bed-zone calibration:</strong> draw bed polygon on a frame and save it.</li>
+        <li><strong>Basic detection:</strong> in bed, out of bed, on floor using frame analysis or prototype state machine.</li>
+        <li><strong>Event timeline:</strong> detections appear as events with status and evidence.</li>
+        <li><strong>Monitor OCR:</strong> crop monitor area, extract HR/BP/SpO2/RR, show accepted readings.</li>
+        <li><strong>Distress candidates:</strong> combine visible posture, motion, RR/SpO2 OCR, and VLM scene check.</li>
+        <li><strong>IV/oxygen candidates:</strong> detect visible issues; mark low-confidence until reviewed.</li>
+        <li><strong>VLM confirmation:</strong> call VLM for fall, distress, oxygen, IV, and ambiguous events.</li>
+        <li><strong>Review workflow:</strong> acknowledge, true positive, false positive, escalate, note draft.</li>
+        <li><strong>Ask AINA:</strong> chat can answer questions using current state, timeline, vitals, and evidence.</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>13. What The Earlier Comprehensive PRD Still Gives Us</h2>
+      <p>The broader PRD was useful, but it should be treated as future expansion. The one-bed build should reuse these parts now:</p>
+      <ul>
+        <li>AINA-style command center interaction pattern.</li>
+        <li>Event timeline with evidence and charting review.</li>
+        <li>Ask AINA panel grounded in patient context.</li>
+        <li>Vitals side panel and trend view.</li>
+        <li>Bedside call and alert routing later in the same console.</li>
+        <li>Morning digest after event history exists.</li>
+      </ul>
+
+      <p>Do not start with multi-bed grids, hospital-wide admin, complex FHIR, or mobile apps. Those become useful only after one bed works end to end.</p>
+    </section>
+
+    <section>
+      <h2>14. Definition Of Done For The First Real Demo</h2>
+      <div class="callout">
+        <strong>Demo goal:</strong> someone opens the remote console and sees one live private room feed. The system detects a patient leaving the bed, records the event, saves evidence, runs VLM review, and the assistant can explain what happened using that evidence.
+      </div>
+
+      <h3>Checklist</h3>
+      <ul>
+        <li>Live video visible remotely.</li>
+        <li>Camera status displayed.</li>
+        <li>Bed zone calibrated.</li>
+        <li>At least three bed states detected: in bed, out of bed, on floor.</li>
+        <li>Event timeline updates live.</li>
+        <li>Evidence still and clip saved for event.</li>
+        <li>VLM structured output attached to event.</li>
+        <li>Monitor OCR can read sample vitals.</li>
+        <li>Assistant answers "what happened?" with event ID and evidence reference.</li>
+        <li>Human can mark event true positive or false positive.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>15. Things To Be Careful About</h2>
+      <div class="grid two">
+        <div class="card">
+          <h3>Do Not Overbuild</h3>
+          <p>One bed first. No hospital platform until the one-bed loop works.</p>
+        </div>
+        <div class="card">
+          <h3>Do Not Hide Uncertainty</h3>
+          <p>Every detection needs confidence, rule trace, and review state.</p>
+        </div>
+        <div class="card">
+          <h3>Do Not Make Diagnosis Claims</h3>
+          <p>Say "possible distress detected" rather than "patient has respiratory failure."</p>
+        </div>
+        <div class="card">
+          <h3>Do Not Upload Everything</h3>
+          <p>Upload event evidence, not continuous raw video, unless explicitly configured.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>16. Final Product Shape</h2>
+      <p>The correct product is a live remote monitoring console with intelligence layered onto it:</p>
+      <ol>
+        <li>See the room live.</li>
+        <li>Know the current state.</li>
+        <li>Detect important changes.</li>
+        <li>Record evidence.</li>
+        <li>Use VLM to interpret ambiguous scenes.</li>
+        <li>Use chat to query what happened and what needs review.</li>
+        <li>Route alerts and draft notes only after the system has evidence.</li>
+      </ol>
+      <p>That is the build. Everything else is expansion.</p>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    Built from the AIDA PRD, AIDA build guide, bedside vision v0 plan, and the AINA-style reference screenshots. This document intentionally narrows the product to one private room and one bed so implementation can start immediately.
+  </footer>
+</body>
+</html>

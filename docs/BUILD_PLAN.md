@@ -6,6 +6,8 @@ Build in evidence-producing phases. Each phase must leave behind runnable softwa
 
 The key decision is to avoid building the assistant first. The assistant becomes valuable only after events, state, vitals, and evidence exist.
 
+The active implementation target is the one-bed remote monitoring build in `docs/ONE_BED_REMOTE_MONITORING_PLAN.html`. Treat the phases below as expansion scaffolding after the one-room loop works end to end.
+
 ## Phase 0: Repo Foundation
 
 Goal: make this repository ready for production work.

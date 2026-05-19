@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from io import BytesIO
 from datetime import datetime, timedelta, timezone
 
 from fastapi.testclient import TestClient
@@ -9,7 +10,7 @@ from healther_vision.imagegen_eval import evaluate_imagegen_report, imagegen_gro
 from healther_vision.app import app
 from healther_vision.models import BedState, CameraRole, EventType, FrameAnalysis, IVState, SyntheticScenario
 from healther_vision.state import VisionStateMachine, fresh_state
-from healther_vision.synthetic import analysis_for, generate_scenario
+from healther_vision.synthetic import analysis_for, generate_scenario, render_frame
 
 
 def test_synthetic_generator_writes_frames_and_manifest(tmp_path):
@@ -342,3 +343,65 @@ def test_medplum_status_exposes_planned_fhir_shape():
     assert body["ok"] is True
     assert "Observation" in body["resources"]
     assert "api_key" not in json.dumps(body).lower()
+
+
+def test_detector_frame_local_cv_creates_reviewable_vitals_event():
+    client = TestClient(app)
+    bed_id = "pytest-bed-detector-vitals"
+    analysis = analysis_for(SyntheticScenario.VITALS_ALERT, 0, 3, CameraRole.CCTV)
+    image = render_frame(
+        analysis,
+        scenario=SyntheticScenario.VITALS_ALERT,
+        camera_role=CameraRole.CCTV,
+        frame_index=0,
+    )
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG")
+    payload = buffer.getvalue()
+
+    emitted = set()
+    for i in range(3):
+        response = client.post(
+            f"/v0/bed/{bed_id}/detector/frame",
+            data={
+                "patient_id": "pat-detector",
+                "camera_id": "bedside-1",
+                "captured_at": (datetime.now(timezone.utc) + timedelta(seconds=i)).isoformat(),
+            },
+            files={"frame": ("frame.jpg", payload, "image/jpeg")},
+        )
+        assert response.status_code == 200
+        emitted.update(event["event_type"] for event in response.json()["events"])
+
+    assert "VITALS_OUT_OF_RANGE" in emitted
+    monitor = client.get(f"/v0/monitor/state?bed_id={bed_id}").json()
+    assert any(event["type"] == "VITALS_OUT_OF_RANGE" for event in monitor["active_alerts"])
+    assert monitor["detection"]["stats"]["frames_analyzed"] >= 3
+
+
+def test_detector_start_for_tablet_waits_for_browser_frames():
+    client = TestClient(app)
+    bed_id = "pytest-bed-detector-tablet"
+    response = client.post(f"/v0/bed/{bed_id}/detector/start", json={"interval_seconds": 1})
+    assert response.status_code == 200
+    detector = response.json()["detector"]
+    assert detector["status"] == "awaiting_browser_frames"
+    status = client.get(f"/v0/bed/{bed_id}/detector/status").json()["detector"]
+    assert status["capabilities"]["browser_frame_ingest"] is True
+
+
+def test_detector_start_for_synthetic_runs_background_loop():
+    client = TestClient(app)
+    bed_id = "pytest-bed-detector-loop"
+    client.post(
+        f"/v0/bed/{bed_id}/camera/select",
+        json={"source_type": "synthetic", "source_url": "synthetic", "camera_label": "Synthetic ICU feed"},
+    )
+    started = client.post(
+        f"/v0/bed/{bed_id}/detector/start",
+        json={"interval_seconds": 0.5, "scenario": "vitals_alert"},
+    )
+    assert started.status_code == 200
+    assert started.json()["detector"]["status"] == "running"
+    stopped = client.post(f"/v0/bed/{bed_id}/detector/stop")
+    assert stopped.status_code == 200

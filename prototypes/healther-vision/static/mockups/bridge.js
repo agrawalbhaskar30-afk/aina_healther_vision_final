@@ -5,6 +5,8 @@
   const VITALS_PAGE_SIZE = 10;
   let activeVitals = null;
   let localCameraStream = null;
+  let detectorFrameTimer = null;
+  let statePollTimer = null;
 
   const postJson = async (url, body) => {
     const res = await fetch(api + url, {
@@ -293,6 +295,122 @@
     img.src = `${streamUrl}${separator}t=${Date.now()}`;
   }
 
+  async function startPostDetection(options = {}) {
+    const body = {
+      interval_seconds: options.interval_seconds || 2,
+      scenario: options.scenario || "normal",
+      use_cloud_vlm: Boolean(options.use_cloud_vlm),
+    };
+    const data = await postJson(`/v0/bed/${encodeURIComponent(bedId)}/detector/start`, body);
+    renderMonitorState({ detection: data.detector });
+    if (data.detector?.status === "awaiting_browser_frames") startLocalDetectorSampler();
+    else stopLocalDetectorSampler();
+    return data;
+  }
+
+  function startMonitorPolling() {
+    clearInterval(statePollTimer);
+    const tick = () => getJson(`/v0/monitor/state?bed_id=${encodeURIComponent(bedId)}`)
+      .then(renderMonitorState)
+      .catch(() => {});
+    tick();
+    statePollTimer = setInterval(tick, 4000);
+  }
+
+  function renderMonitorState(data) {
+    if (!data) return;
+    const live = document.querySelector(".live-badge");
+    const detector = data.detection || data.detector;
+    if (live && detector?.status) {
+      live.lastChild.textContent = ` LIVE · ${esc(detector.source_type || "source")} · detector ${detector.status}`;
+    }
+    if (data.vitals) updateVitalsCards(data.vitals);
+    if (Array.isArray(data.active_alerts)) renderActiveAlerts(data.active_alerts);
+  }
+
+  function updateVitalsCards(vitals) {
+    const mapping = [
+      ["hr", "HR", vitals.hr, "bpm"],
+      ["bp", "BP", vitals.bp, "mmHg"],
+      ["spo2", "SPO", vitals.spo2, "%"],
+      ["rr", "RR", vitals.rr, "/min"],
+    ];
+    document.querySelectorAll(".vital-mini,.vital-card").forEach((card) => {
+      const label = card.querySelector(".v-lbl,.vitals-label")?.textContent?.trim().toUpperCase() || "";
+      const match = mapping.find(([, key]) => label.includes(key));
+      if (!match || match[2] === undefined || match[2] === null) return;
+      const [, , value, unit] = match;
+      const num = card.querySelector(".v-num");
+      const unitEl = card.querySelector(".v-unit");
+      if (num) num.textContent = String(value);
+      if (unitEl) unitEl.textContent = unit;
+    });
+  }
+
+  function renderActiveAlerts(alerts) {
+    const list = document.querySelector(".alerts-card .list");
+    if (!list) return;
+    document.querySelectorAll(".alerts-card .count").forEach((count) => { count.textContent = `(${alerts.length})`; });
+    document.querySelectorAll(".alerts-card .clear").forEach((button) => { button.style.display = alerts.length ? "" : "none"; });
+    if (!alerts.length) {
+      clearAlertsUi();
+      return;
+    }
+    list.innerHTML = alerts.map((alert) => {
+      const severity = alert.severity || "info";
+      const message = alert.message || alert.label || alert.description || alert.type || "Detection event";
+      return `
+        <div class="alert-row tone-${esc(severity)}" data-event-id="${esc(alert.id)}">
+          <span class="stripe"></span>
+          <div class="top">
+            <span class="icn">!</span>
+            <span class="msg">${esc(message)}</span>
+          </div>
+          <div class="bot">
+            <span class="time">${esc(alert.ago || alert.time || "now")}</span>
+            <span class="spacer"></span>
+            <button type="button" class="ghost-btn">Review →</button>
+            <button type="button" class="x-btn" aria-label="Dismiss alert">×</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function stopLocalDetectorSampler() {
+    clearInterval(detectorFrameTimer);
+    detectorFrameTimer = null;
+  }
+
+  function startLocalDetectorSampler() {
+    stopLocalDetectorSampler();
+    sendLocalDetectorFrame();
+    detectorFrameTimer = setInterval(sendLocalDetectorFrame, 5000);
+  }
+
+  function sendLocalDetectorFrame() {
+    const video = document.getElementById("aida-local-camera");
+    if (!video || video.style.display === "none" || video.readyState < 2 || !video.videoWidth) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+      const form = new FormData();
+      form.append("frame", blob, "tablet-camera-frame.jpg");
+      form.append("patient_id", "patient-private-room-01");
+      form.append("camera_id", "bedside-1");
+      form.append("captured_at", new Date().toISOString());
+      const result = await postForm(`/v0/bed/${encodeURIComponent(bedId)}/detector/frame`, form).catch(() => null);
+      if (result?.ok) {
+        renderMonitorState({ detection: result.detector });
+      }
+    }, "image/jpeg", 0.82);
+  }
+
   function ensureLocalCameraVideo() {
     const stage = document.querySelector(".video-stage");
     if (!stage) return null;
@@ -319,6 +437,7 @@
   }
 
   function stopLocalCamera() {
+    stopLocalDetectorSampler();
     if (localCameraStream) {
       localCameraStream.getTracks().forEach((track) => track.stop());
       localCameraStream = null;
@@ -354,6 +473,7 @@
       if (img) img.style.display = "none";
       await video.play().catch(() => {});
       document.querySelector(".cam-trigger span:last-child")?.replaceChildren(document.createTextNode("Bedside Cam 1"));
+      await startPostDetection();
       addToast("Tablet camera is live for Bedside Cam 1.");
     } catch (err) {
       addToast("Camera permission denied or unavailable; using synthetic feed.");
@@ -381,6 +501,7 @@
         if (!data.ok) throw new Error("upload failed");
         updateStream(data.stream_url);
         document.querySelector(".cam-trigger span:last-child")?.replaceChildren(document.createTextNode(file.name));
+        await startPostDetection();
         addToast("Test video feed is now active.");
       } catch (err) {
         addToast("Video upload failed.");
@@ -400,6 +521,7 @@
       } else if (cleaned.includes("Wall Cam")) {
         const data = await postJson(`/v0/bed/${encodeURIComponent(bedId)}/camera/select`, { camera_id: "wall-wide" });
         updateStream(data.stream_url);
+        await startPostDetection();
         addToast("Wall Cam selected.");
       } else if (cleaned.includes("synthetic")) {
         const data = await postJson(`/v0/bed/${encodeURIComponent(bedId)}/camera/select`, {
@@ -408,6 +530,7 @@
           camera_label: "Synthetic ICU feed",
         });
         updateStream(data.stream_url);
+        await startPostDetection();
         addToast("Synthetic feed selected.");
       } else if (cleaned.includes("RTSP")) {
         const url = window.prompt("Paste RTSP/HTTP camera URL");
@@ -418,6 +541,7 @@
           camera_label: "RTSP stream",
         });
         updateStream(data.stream_url);
+        await startPostDetection();
         addToast("RTSP stream selected.");
       } else if (cleaned.includes("file")) {
         ensureTestFileInput().click();
@@ -590,6 +714,8 @@
 
     refreshSummary().catch(() => {});
     refreshSuggestions().catch(() => {});
+    startPostDetection().catch(() => addToast("Post-detection could not start."));
+    startMonitorPolling();
 
     document.addEventListener("click", (event) => {
       if (event.target.closest(".aida-cite")) {
@@ -636,6 +762,20 @@
       const button = event.target.closest("button");
       if (!button) return;
       const text = button.textContent.trim();
+      const alertRow = button.closest("[data-event-id]");
+      if (alertRow && button.getAttribute("aria-label") === "Dismiss alert") {
+        event.preventDefault();
+        event.stopPropagation();
+        postJson(`/v0/events/${encodeURIComponent(alertRow.dataset.eventId)}/review`, { action: "dismissed" })
+          .then(() => getJson(`/v0/monitor/state?bed_id=${encodeURIComponent(bedId)}`).then(renderMonitorState))
+          .catch(() => addToast("Could not dismiss alert."));
+        return;
+      }
+      if (alertRow && text.includes("Review")) {
+        event.preventDefault();
+        window.location.href = `/bed/${encodeURIComponent(bedId)}/review?event=${encodeURIComponent(alertRow.dataset.eventId)}`;
+        return;
+      }
       if (button.getAttribute("aria-label") === "Clear all alerts" || text === "Clear all") {
         event.preventDefault();
         event.stopPropagation();

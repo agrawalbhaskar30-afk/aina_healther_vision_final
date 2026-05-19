@@ -7,9 +7,11 @@ import time
 from io import BytesIO
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from threading import Event as ThreadEvent, Thread
 from typing import Annotated, Any
 from urllib.parse import quote
 
+import cv2
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -27,6 +29,13 @@ from .models import (
     IVState,
     Severity,
     SyntheticScenario,
+    VisionEvent,
+)
+from .post_detection import (
+    DetectorRuntime,
+    analyze_frame_cv,
+    read_image_upload,
+    save_frame_evidence,
 )
 from .state import VITAL_RULES, MemoryStore, VisionStateMachine, severity_for
 from .synthetic import analysis_for, render_frame
@@ -64,6 +73,9 @@ SETUP_CONFIGS: dict[str, dict[str, Any]] = {
 UPLOADED_SOURCES: dict[str, Path] = {}
 ESCALATIONS: list[dict[str, Any]] = []
 USER_PREFERENCES: dict[str, Any] = {"density": "default", "theme": "light"}
+DETECTOR_RUNTIMES: dict[str, DetectorRuntime] = {}
+DETECTOR_THREADS: dict[str, Thread] = {}
+DETECTOR_STOPS: dict[str, ThreadEvent] = {}
 
 CAMERA_OPTIONS: list[dict[str, Any]] = [
     {
@@ -251,6 +263,12 @@ class EscalationRequest(BaseModel):
     due_minutes: int = Field(default=5, ge=1, le=240)
 
 
+class DetectorStartRequest(BaseModel):
+    interval_seconds: float = Field(default=2.0, ge=0.5, le=30)
+    scenario: SyntheticScenario = SyntheticScenario.NORMAL
+    use_cloud_vlm: bool = False
+
+
 @app.get("/health")
 def health() -> dict:
     return {"ok": True, "service": "healther-vision", "mode": "synthetic-first"}
@@ -347,12 +365,19 @@ def state_reference_page() -> str:
 def monitor_state(bed_id: str = DEFAULT_BED_ID) -> dict:
     state = store.state(bed_id, DEFAULT_PATIENT_ID)
     events = store.events[bed_id]
-    active_alerts = [event for event in APP_EVENTS if event.get("status") not in {"acknowledged", "dismissed", "cleared"}]
+    active_alerts = [
+        event
+        for event in APP_EVENTS
+        if event.get("status") not in {"acknowledged", "dismissed", "cleared"}
+        and event_belongs_to_bed(event, bed_id)
+    ]
     critical_count = len([event for event in active_alerts if event.get("severity") == "critical"])
+    detector = detector_status_payload(bed_id)
     latest_escalation = next(
         (item for item in reversed(ESCALATIONS) if item["event_id"] in {event["id"] for event in active_alerts}),
         None,
     )
+    latest = vitals_history_payload(bed_id)["latest"]
     return {
         "ok": True,
         "room": {"id": "private-room-01", "bed_id": bed_id, "mode": "one-bed"},
@@ -365,9 +390,14 @@ def monitor_state(bed_id: str = DEFAULT_BED_ID) -> dict:
         },
         "state": state.model_dump(mode="json"),
         "event_count": len(events) or 8,
-        "vitals": {"hr": 96, "bp": "124/80", "spo2": 94, "rr": 22},
+        "vitals": {
+            "hr": latest.get("hr", 96),
+            "bp": latest.get("bp", "124/80"),
+            "spo2": latest.get("spo2", 94),
+            "rr": latest.get("rr", 22),
+        },
         "agents": {
-            "vision": "live",
+            "vision": detector["status"],
             "vlm": "gated",
             "assistant": "grounded",
             "memory": "events+vitals+evidence",
@@ -378,6 +408,7 @@ def monitor_state(bed_id: str = DEFAULT_BED_ID) -> dict:
         "app_events": APP_EVENTS,
         "active_alerts": active_alerts,
         "critical_count": critical_count,
+        "detection": detector,
         "escalation": latest_escalation or {"status": "none", "route": None, "due_at": None},
     }
 
@@ -480,7 +511,7 @@ def clear_bed_alerts(bed_id: str) -> dict:
     cleared: list[dict[str, Any]] = []
     cleared_at = datetime.now(timezone.utc).isoformat()
     for event in APP_EVENTS:
-        if event.get("status") not in {"acknowledged", "dismissed", "cleared"}:
+        if event.get("status") not in {"acknowledged", "dismissed", "cleared"} and event_belongs_to_bed(event, bed_id):
             event["status"] = "cleared"
             event["cleared_at"] = cleared_at
             cleared.append(event)
@@ -499,9 +530,62 @@ def clear_bed_alerts(bed_id: str) -> dict:
         "cleared_count": len(cleared),
         "cleared_events": cleared,
         "active_alerts": [
-            event for event in APP_EVENTS if event.get("status") not in {"acknowledged", "dismissed", "cleared"}
+            event
+            for event in APP_EVENTS
+            if event.get("status") not in {"acknowledged", "dismissed", "cleared"}
+            and event_belongs_to_bed(event, bed_id)
         ],
     }
+
+
+@app.get("/v0/bed/{bed_id}/detector/status")
+def detector_status(bed_id: str) -> dict:
+    return {"ok": True, "detector": detector_status_payload(bed_id)}
+
+
+@app.post("/v0/bed/{bed_id}/detector/start")
+def start_detector(bed_id: str, req: DetectorStartRequest | None = None) -> dict:
+    req = req or DetectorStartRequest()
+    start_detector_runtime(
+        bed_id,
+        interval_seconds=req.interval_seconds,
+        scenario=req.scenario,
+        use_cloud_vlm=req.use_cloud_vlm,
+    )
+    return {"ok": True, "detector": detector_status_payload(bed_id)}
+
+
+@app.post("/v0/bed/{bed_id}/detector/stop")
+def stop_detector(bed_id: str) -> dict:
+    stop_detector_runtime(bed_id)
+    return {"ok": True, "detector": detector_status_payload(bed_id)}
+
+
+@app.post("/v0/bed/{bed_id}/detector/frame")
+async def detector_frame(
+    bed_id: str,
+    frame: Annotated[UploadFile, File()],
+    patient_id: Annotated[str | None, Form()] = DEFAULT_PATIENT_ID,
+    camera_id: Annotated[str | None, Form()] = "bedside-1",
+    captured_at: Annotated[str | None, Form()] = None,
+) -> dict:
+    payload = await frame.read()
+    frame_bgr = read_image_upload(payload)
+    if frame_bgr is None:
+        raise HTTPException(status_code=400, detail="could not decode frame")
+    runtime = DETECTOR_RUNTIMES.setdefault(bed_id, detector_runtime_from_config(bed_id))
+    runtime.status = "running"
+    runtime.stats.mode = "browser-frame"
+    result = process_detection_frame(
+        bed_id,
+        frame_bgr,
+        patient_id=patient_id,
+        camera_id=camera_id,
+        captured_at=parse_dt(captured_at),
+        runtime=runtime,
+        evidence_prefix="browser-frame",
+    )
+    return {"ok": True, **result}
 
 
 @app.get("/v0/vitals/trend")
@@ -975,6 +1059,322 @@ def resolve_stream_source(source: str, bed_id: str) -> str:
         path = UPLOADED_SOURCES.get(source_id)
         return str(path) if path and path.exists() else "synthetic"
     return source
+
+
+def detector_runtime_from_config(
+    bed_id: str,
+    *,
+    interval_seconds: float = 2.0,
+    scenario: SyntheticScenario = SyntheticScenario.NORMAL,
+    use_cloud_vlm: bool = False,
+) -> DetectorRuntime:
+    config = setup_config_for(bed_id)
+    return DetectorRuntime(
+        bed_id=bed_id,
+        status="stopped",
+        source_type=config.get("source_type", "synthetic"),
+        source_url=config.get("source_url", "synthetic"),
+        camera_label=config.get("camera_label", "Bedside Cam 1"),
+        scenario=scenario.value,
+        interval_seconds=interval_seconds,
+        use_cloud_vlm=use_cloud_vlm,
+    )
+
+
+def detector_status_payload(bed_id: str) -> dict[str, Any]:
+    runtime = DETECTOR_RUNTIMES.get(bed_id)
+    if not runtime:
+        runtime = detector_runtime_from_config(bed_id)
+    payload = runtime.as_dict()
+    payload["capabilities"] = {
+        "local_cv": True,
+        "browser_frame_ingest": True,
+        "file_rtsp_background_loop": True,
+        "cloud_vlm_confirmation": bool(os.getenv("OPENAI_API_KEY") or os.getenv("GEMINI_API_KEY")),
+        "continuous_medplum_sync": False,
+    }
+    return payload
+
+
+def start_detector_runtime(
+    bed_id: str,
+    *,
+    interval_seconds: float,
+    scenario: SyntheticScenario,
+    use_cloud_vlm: bool,
+) -> DetectorRuntime:
+    stop_detector_runtime(bed_id)
+    runtime = detector_runtime_from_config(
+        bed_id,
+        interval_seconds=interval_seconds,
+        scenario=scenario,
+        use_cloud_vlm=use_cloud_vlm,
+    )
+    runtime.started_at = datetime.now(timezone.utc)
+    DETECTOR_RUNTIMES[bed_id] = runtime
+    if runtime.source_type == "tablet_camera" or runtime.source_url.startswith("browser:"):
+        runtime.status = "awaiting_browser_frames"
+        runtime.stats.mode = "browser-frame-ingest"
+        return runtime
+    runtime.status = "running"
+    runtime.stats.mode = "background-loop"
+    stop_event = ThreadEvent()
+    thread = Thread(target=detector_loop, args=(runtime, stop_event), daemon=True)
+    DETECTOR_STOPS[bed_id] = stop_event
+    DETECTOR_THREADS[bed_id] = thread
+    thread.start()
+    return runtime
+
+
+def stop_detector_runtime(bed_id: str) -> DetectorRuntime:
+    runtime = DETECTOR_RUNTIMES.get(bed_id) or detector_runtime_from_config(bed_id)
+    stop_event = DETECTOR_STOPS.pop(bed_id, None)
+    if stop_event:
+        stop_event.set()
+    thread = DETECTOR_THREADS.pop(bed_id, None)
+    if thread and thread.is_alive():
+        thread.join(timeout=1.0)
+    if runtime.status != "stopped":
+        runtime.status = "stopped"
+        runtime.stopped_at = datetime.now(timezone.utc)
+    DETECTOR_RUNTIMES[bed_id] = runtime
+    return runtime
+
+
+def detector_loop(runtime: DetectorRuntime, stop_event: ThreadEvent) -> None:
+    source = resolve_stream_source(runtime.source_url, runtime.bed_id)
+    if source == "synthetic":
+        detector_synthetic_loop(runtime, stop_event)
+        return
+    detector_capture_loop(runtime, source, stop_event)
+
+
+def detector_synthetic_loop(runtime: DetectorRuntime, stop_event: ThreadEvent) -> None:
+    import numpy as np
+
+    scenario = SyntheticScenario(runtime.scenario)
+    index = 0
+    while not stop_event.is_set():
+        analysis = analysis_for(scenario, index % 48, 48, CameraRole.CCTV)
+        image = render_frame(
+            analysis,
+            scenario=scenario,
+            camera_role=CameraRole.CCTV,
+            frame_index=index % 48,
+        )
+        frame_bgr = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+        process_detection_frame(
+            runtime.bed_id,
+            frame_bgr,
+            patient_id=DEFAULT_PATIENT_ID,
+            camera_id=runtime.camera_label,
+            captured_at=datetime.now(timezone.utc),
+            runtime=runtime,
+            evidence_prefix="synthetic-loop",
+        )
+        index += 1
+        stop_event.wait(runtime.interval_seconds)
+
+
+def detector_capture_loop(runtime: DetectorRuntime, source: str, stop_event: ThreadEvent) -> None:
+    capture_source: int | str = int(source) if source.isdigit() else source
+    cap = cv2.VideoCapture(capture_source)
+    if not cap.isOpened():
+        runtime.status = "error"
+        runtime.stats.errors += 1
+        runtime.stats.last_error = f"could not open source: {source}"
+        return
+    loop_file = isinstance(capture_source, str) and Path(capture_source).exists()
+    empty_reads = 0
+    try:
+        while not stop_event.is_set():
+            ok, frame_bgr = cap.read()
+            runtime.stats.frames_seen += 1
+            if not ok:
+                if loop_file and empty_reads < 3:
+                    empty_reads += 1
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    stop_event.wait(runtime.interval_seconds)
+                    continue
+                runtime.status = "ended"
+                break
+            empty_reads = 0
+            process_detection_frame(
+                runtime.bed_id,
+                frame_bgr,
+                patient_id=DEFAULT_PATIENT_ID,
+                camera_id=runtime.camera_label,
+                captured_at=datetime.now(timezone.utc),
+                runtime=runtime,
+                evidence_prefix="source-loop",
+            )
+            stop_event.wait(runtime.interval_seconds)
+    except Exception as exc:
+        runtime.status = "error"
+        runtime.stats.errors += 1
+        runtime.stats.last_error = str(exc)
+    finally:
+        cap.release()
+
+
+def process_detection_frame(
+    bed_id: str,
+    frame_bgr,
+    *,
+    patient_id: str | None,
+    camera_id: str | None,
+    captured_at: datetime,
+    runtime: DetectorRuntime,
+    evidence_prefix: str,
+) -> dict[str, Any]:
+    runtime.stats.frames_seen += 1
+    evidence_data = save_frame_evidence(
+        frame_bgr,
+        GENERATED_DIR / "evidence" / bed_id,
+        evidence_prefix,
+    )
+    evidence = Evidence(**evidence_data)
+    analysis_config = {} if runtime.source_type == "synthetic" else setup_config_for(bed_id)
+    analysis = analyze_frame_cv(frame_bgr, analysis_config)
+    if runtime.use_cloud_vlm:
+        analysis = merge_cloud_confirmation(analysis, Path(evidence.path or ""))
+    state = store.state(bed_id, patient_id)
+    next_state, events = machine.process(
+        state,
+        analysis,
+        at=captured_at,
+        bed_id=bed_id,
+        patient_id=patient_id,
+        camera_id=camera_id,
+        evidence=evidence,
+    )
+    store.save(next_state, events)
+    store.append_vitals(bed_id, analysis, captured_at)
+    runtime.stats.frames_analyzed += 1
+    runtime.stats.events_created += len(events)
+    runtime.stats.last_analysis_at = captured_at
+    runtime.stats.last_analysis = analysis
+    for vision_event in events:
+        upsert_app_event(app_event_from_vision_event(vision_event))
+    return {
+        "state": next_state.model_dump(mode="json"),
+        "analysis": analysis.model_dump(mode="json"),
+        "events": [event.model_dump(mode="json") for event in events],
+        "app_events": [app_event_from_vision_event(event) for event in events],
+        "detector": runtime.as_dict(),
+        "evidence": evidence.model_dump(mode="json"),
+    }
+
+
+def merge_cloud_confirmation(local: FrameAnalysis, evidence_path: Path) -> FrameAnalysis:
+    if not evidence_path.exists():
+        return local
+    try:
+        from .vlm import analyze_image
+
+        cloud = analyze_image(evidence_path)
+    except Exception:
+        return local
+    data = local.model_dump()
+    if cloud.bed_state != BedState.UNKNOWN:
+        data["bed_state"] = cloud.bed_state
+        data["bed_state_confidence"] = max(cloud.bed_state_confidence, local.bed_state_confidence)
+    if cloud.vitals:
+        data["vitals"] = {**local.vitals, **cloud.vitals}
+    if cloud.iv.state not in {IVState.UNKNOWN, IVState.ABSENT}:
+        data["iv"] = cloud.iv
+    if cloud.staff_confidence > local.staff_confidence:
+        data["staff_present"] = cloud.staff_present
+        data["staff_confidence"] = cloud.staff_confidence
+    data["scene"] = f"{local.scene} Cloud confirmation: {cloud.scene}"
+    trace = {**local.model_trace, "cloud_confirmation": cloud.model_trace}
+    data["model_trace"] = trace
+    return FrameAnalysis.model_validate(data)
+
+
+def app_event_from_vision_event(event: VisionEvent) -> dict[str, Any]:
+    event_id = f"evt-{event.event_type.value.lower().replace('_', '-')}-{int(event.at.timestamp())}"
+    label = event_label(event.event_type)
+    description = event_description(event)
+    evidence_still = evidence_url(event.evidence)
+    return {
+        "id": event_id,
+        "bed_id": event.bed_id,
+        "patient_id": event.patient_id,
+        "type": event.event_type.value,
+        "label": label,
+        "message": label,
+        "severity": event.severity.value,
+        "status": "needs_review" if event.review_required else "unreviewed",
+        "time": event.at.astimezone().strftime("%I:%M %p"),
+        "ago": "now",
+        "description": description,
+        "desc": description,
+        "confidence": round(event.confidence, 3),
+        "evidence": {
+            "still": evidence_still,
+            "clip": stream_url_for(setup_config_for(event.bed_id).get("source_url", "synthetic"), event.bed_id),
+        },
+        "vlm": {
+            "summary": event.rule_trace,
+            "needs_human_review": event.review_required,
+        },
+        "payload": event.payload,
+        "created_at": event.at.isoformat(),
+    }
+
+
+def upsert_app_event(event: dict[str, Any]) -> None:
+    if any(existing["id"] == event["id"] for existing in APP_EVENTS):
+        return
+    APP_EVENTS.insert(0, event)
+    del APP_EVENTS[100:]
+
+
+def event_belongs_to_bed(event: dict[str, Any], bed_id: str) -> bool:
+    return event.get("bed_id") in {None, bed_id}
+
+
+def evidence_url(evidence: Evidence | None) -> str:
+    if not evidence or not evidence.path:
+        return "/v0/monitor/frame.jpg?scenario=normal"
+    path = Path(evidence.path)
+    try:
+        return "/generated/" + str(path.relative_to(GENERATED_DIR)).replace("\\", "/")
+    except ValueError:
+        return "/v0/monitor/frame.jpg?scenario=normal"
+
+
+def event_label(event_type: EventType) -> str:
+    return {
+        EventType.PATIENT_IN_BED: "Patient in bed",
+        EventType.PATIENT_SITTING_EDGE: "Patient sitting on bed edge",
+        EventType.PATIENT_OUT_OF_BED: "Patient out of bed",
+        EventType.PATIENT_ON_FLOOR: "Patient on floor",
+        EventType.FALL_SUSPECTED: "Fall suspected",
+        EventType.FALL_CONFIRMED: "Fall confirmed",
+        EventType.STAFF_VISIT_STARTED: "Staff entered room",
+        EventType.STAFF_VISIT_ENDED: "Staff left room",
+        EventType.NO_STAFF_VISIT: "No staff visit threshold reached",
+        EventType.VITAL_READING_ACCEPTED: "Monitor OCR reading accepted",
+        EventType.VITALS_OUT_OF_RANGE: "Vitals out of range",
+        EventType.IV_RUNNING: "IV running",
+        EventType.IV_NEAR_EMPTY: "IV bag near empty",
+        EventType.IV_COMPLETED_OR_STOPPED: "IV completed or stopped",
+        EventType.IV_STATE_UNCLEAR: "IV state unclear",
+    }.get(event_type, event_type.value.replace("_", " ").title())
+
+
+def event_description(event: VisionEvent) -> str:
+    if event.event_type == EventType.VITALS_OUT_OF_RANGE:
+        vital = event.payload.get("vital", {})
+        kind = vital.get("kind", "vital").upper()
+        value = vital.get("value") or f"{vital.get('systolic')}/{vital.get('diastolic')}"
+        return f"{kind} reading {value} crossed the configured threshold."
+    if event.event_type == EventType.IV_NEAR_EMPTY:
+        fill = event.payload.get("iv", {}).get("bag_fill_percent")
+        return f"IV bag appears near empty{f' at {fill}%' if fill is not None else ''}."
+    return event.rule_trace
 
 
 def medplum_status_payload() -> dict[str, Any]:

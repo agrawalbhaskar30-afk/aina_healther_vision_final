@@ -1,0 +1,3036 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1440, initial-scale=1" />
+  <title>Aida — State Reference</title>
+  <style id="aida-colors-and-type">
+/* =============================================================
+   Aida — Colors & Type tokens
+   Two themes (light, dark). Toggle by setting [data-theme] on the
+   root element, or by removing it and relying on prefers-color-scheme.
+   ============================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ----- Base (light is default) -------------------------------- */
+:root,
+:root[data-theme="light"] {
+  /* Surfaces */
+  --bg:              #FAFAF9;   /* stone-50    — app background */
+  --surface:         #FFFFFF;   /*              — card / panel  */
+  --surface-2:       #F5F5F4;   /* stone-100   — recessed wells */
+  --border:          #E7E5E4;   /* stone-200   — hairlines      */
+  --border-strong:   #D6D3D1;   /* stone-300   — input borders  */
+  --scrim:           rgba(0,0,0,0.4);
+
+  /* Foreground */
+  --fg-1:            #1C1917;   /* stone-900   — primary text   */
+  --fg-2:            #57534E;   /* stone-600   — secondary text */
+  --fg-3:            #A8A29E;   /* stone-400   — tertiary text  */
+  --fg-on-brand:     #FFFFFF;
+
+  /* Brand */
+  --brand:           #0F766E;   /* teal-700                     */
+  --brand-hover:     #115E59;   /* teal-800                     */
+  --brand-active:    #134E4A;   /* teal-900                     */
+  --brand-subtle:    #F0FDFA;   /* teal-50    — soft tint bg    */
+  --brand-subtle-fg: #115E59;
+  --brand-ring:      rgba(15,118,110,0.32);
+
+  /* Semantic */
+  --critical:        #E11D48;   /* rose-600  */
+  --critical-bg:     #FFF1F2;   /* rose-50   */
+  --critical-fg:     #9F1239;   /* rose-800  */
+  --warning:         #D97706;   /* amber-600 */
+  --warning-bg:      #FFFBEB;   /* amber-50  */
+  --warning-fg:      #92400E;   /* amber-800 */
+  --success:         #059669;   /* emerald-600 */
+  --success-bg:      #ECFDF5;   /* emerald-50  */
+  --success-fg:      #065F46;   /* emerald-800 */
+  --info:            #0284C7;   /* sky-600   */
+  --info-bg:         #F0F9FF;   /* sky-50    */
+  --info-fg:         #075985;   /* sky-800   */
+
+  /* Elevation */
+  --shadow-1:        0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.02);
+  --shadow-2:        0 4px 12px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+}
+
+/* ----- Dark -------------------------------------------------- */
+:root[data-theme="dark"] {
+  --bg:              #0A0A09;
+  --surface:         #1C1C1B;
+  --surface-2:       #232220;
+  --border:          #292524;   /* stone-800 */
+  --border-strong:   #44403C;   /* stone-700 */
+  --scrim:           rgba(0,0,0,0.6);
+
+  --fg-1:            #F5F5F4;   /* stone-100 */
+  --fg-2:            #A8A29E;   /* stone-400 */
+  --fg-3:            #57534E;   /* stone-600 */
+  --fg-on-brand:     #0A0A09;
+
+  --brand:           #2DD4BF;   /* teal-400 */
+  --brand-hover:     #5EEAD4;   /* teal-300 */
+  --brand-active:    #99F6E4;   /* teal-200 */
+  --brand-subtle:    rgba(45,212,191,0.10);
+  --brand-subtle-fg: #5EEAD4;
+  --brand-ring:      rgba(45,212,191,0.40);
+
+  --critical:        #F43F5E;   /* rose-500   */
+  --critical-bg:     rgba(244,63,94,0.10);
+  --critical-fg:     #FDA4AF;   /* rose-300   */
+  --warning:         #F59E0B;
+  --warning-bg:      rgba(245,158,11,0.10);
+  --warning-fg:      #FCD34D;
+  --success:         #10B981;
+  --success-bg:      rgba(16,185,129,0.10);
+  --success-fg:      #6EE7B7;
+  --info:            #0EA5E9;
+  --info-bg:         rgba(14,165,233,0.10);
+  --info-fg:         #7DD3FC;
+
+  --shadow-1:        0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.04);
+  --shadow-2:        0 4px 16px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.4);
+}
+
+/* ----- Typography -------------------------------------------- */
+:root {
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Size / weight / leading */
+  --display-size:  48px;  --display-line: 1.05;  --display-weight: 500;
+  --h1-size:       24px;  --h1-line:      1.25;  --h1-weight:      600;
+  --h2-size:       18px;  --h2-line:      1.35;  --h2-weight:      600;
+  --body-size:     14px;  --body-line:    1.5;   --body-weight:    400;
+  --small-size:    12px;  --small-line:   1.4;   --small-weight:   500;
+  --tiny-size:     11px;  --tiny-line:    1.3;   --tiny-weight:    400;
+
+  /* Spacing — 8pt grid */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-full: 9999px;
+}
+
+/* ----- Semantic element styles ------------------------------- */
+html { font-family: var(--font-sans); color: var(--fg-1); background: var(--bg); }
+body { font-size: var(--body-size); line-height: var(--body-line); }
+
+h1 { font-size: var(--h1-size); line-height: var(--h1-line); font-weight: var(--h1-weight); letter-spacing: -0.011em; color: var(--fg-1); }
+h2 { font-size: var(--h2-size); line-height: var(--h2-line); font-weight: var(--h2-weight); letter-spacing: -0.006em; color: var(--fg-1); }
+p, li { font-size: var(--body-size); line-height: var(--body-line); color: var(--fg-2); }
+small { font-size: var(--small-size); font-weight: var(--small-weight); color: var(--fg-2); }
+code, kbd, .mono { font-family: var(--font-mono); }
+
+.display {
+  font-family: var(--font-mono);
+  font-size: var(--display-size);
+  line-height: var(--display-line);
+  font-weight: var(--display-weight);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--fg-1);
+}
+
+.tabular { font-variant-numeric: tabular-nums; }
+
+.label-caps {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+
+/* Focus ring — keyboard only */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: var(--radius-md);
+}
+
+  </style>
+  <style id="aida-reference">
+/* =============================================================
+   Aida — State Reference page
+   Layout & section-specific styles for the polish-pass doc.
+   Layers on top of colors_and_type.css.
+   ============================================================= */
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg-1);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 150ms ease-out, color 150ms ease-out;
+}
+button { font-family: inherit; cursor: pointer; }
+input, select, textarea { font-family: inherit; }
+
+/* ---------- Top bar ---------- */
+.ref-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 32px;
+  background: color-mix(in oklab, var(--bg) 92%, transparent);
+  backdrop-filter: saturate(140%) blur(8px);
+  -webkit-backdrop-filter: saturate(140%) blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.ref-topbar .mark { color: var(--brand); display: inline-flex; }
+.ref-topbar .crumbs {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--fg-2);
+}
+.ref-topbar .crumbs .seg { color: var(--fg-2); }
+.ref-topbar .crumbs .slash { color: var(--fg-3); font-family: var(--font-mono); font-size: 12px; }
+.ref-topbar .crumbs .current {
+  color: var(--fg-1); font-weight: 500;
+}
+.ref-topbar .right { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; }
+.ref-topbar .doc-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 10px;
+  border-radius: var(--radius-full);
+  background: var(--brand-subtle); color: var(--brand-subtle-fg);
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.04em; text-transform: uppercase;
+}
+.ref-topbar .icon-btn {
+  width: 32px; height: 32px;
+  border-radius: var(--radius-md);
+  background: transparent; border: 1px solid transparent;
+  color: var(--fg-2);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background 100ms, color 100ms, border-color 100ms;
+}
+.ref-topbar .icon-btn:hover { background: var(--surface-2); color: var(--fg-1); border-color: var(--border); }
+
+/* ---------- Page shell ---------- */
+.ref-page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 56px 48px 120px;
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 56px;
+}
+@media (max-width: 1100px) {
+  .ref-page { grid-template-columns: 1fr; gap: 24px; padding: 40px 24px 80px; }
+  .ref-toc { display: none; }
+}
+
+/* TOC sidebar (sticky) */
+.ref-toc {
+  position: sticky;
+  top: 88px;
+  align-self: start;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  padding-right: 8px;
+}
+.ref-toc .toc-label {
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--fg-3); margin: 0 0 14px;
+}
+.ref-toc a {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 6px 0;
+  font-size: 12.5px;
+  color: var(--fg-2);
+  text-decoration: none;
+  border-left: 1.5px solid transparent;
+  padding-left: 12px;
+  margin-left: -12px;
+  transition: color 100ms, border-color 100ms;
+}
+.ref-toc a:hover { color: var(--fg-1); }
+.ref-toc a.active { color: var(--fg-1); border-left-color: var(--brand); font-weight: 500; }
+.ref-toc a .num {
+  font-family: var(--font-mono);
+  color: var(--fg-3);
+  font-size: 10.5px;
+  min-width: 18px;
+  flex-shrink: 0;
+}
+
+/* Hero */
+.ref-hero { margin-bottom: 64px; }
+.ref-hero .eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-3);
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+}
+.ref-hero h1 {
+  margin: 0 0 14px;
+  font-size: 32px; font-weight: 600;
+  letter-spacing: -0.018em;
+  color: var(--fg-1);
+}
+.ref-hero p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--fg-2);
+  max-width: 640px;
+}
+.ref-hero .hero-meta {
+  display: flex; gap: 24px; margin-top: 24px;
+  padding-top: 20px; border-top: 1px solid var(--border);
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--fg-3);
+}
+.ref-hero .hero-meta strong { color: var(--fg-2); font-weight: 500; }
+
+/* Sections */
+.ref-section { margin-bottom: 88px; scroll-margin-top: 88px; }
+.ref-section-head {
+  margin-bottom: 28px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+.ref-section-head .meta {
+  display: flex; align-items: baseline; gap: 12px;
+  margin-bottom: 8px;
+}
+.ref-section-head .num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-3);
+  letter-spacing: 0.04em;
+}
+.ref-section-head .tag {
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--brand-subtle-fg);
+  background: var(--brand-subtle);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+.ref-section-head h2 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  color: var(--fg-1);
+}
+.ref-section-head .desc {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--fg-2);
+  max-width: 640px;
+}
+
+/* Variant grid + label */
+.var-grid { display: grid; gap: 16px; }
+.var-grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.var-grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.var-grid.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.var-grid.cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
+.var {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.var-cap {
+  display: flex; align-items: baseline; gap: 8px;
+  font-size: 11px;
+  color: var(--fg-3);
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+.var-cap .name {
+  color: var(--fg-1); font-weight: 500;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 0;
+}
+.var-cap .meta {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--fg-3);
+}
+
+.var-stage {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  min-height: 80px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.var-stage.flush { padding: 0; }
+.var-stage.well { background: var(--surface-2); }
+.var-stage.dark { background: #0b1419; border-color: transparent; }
+.var-stage.stretch { align-items: stretch; }
+
+/* Mini patient-bar mock (for connection states) */
+.mock-topbar {
+  display: flex; align-items: center; gap: 14px;
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--fg-2);
+}
+.mock-topbar .mb-mark { color: var(--brand); display: inline-flex; flex-shrink: 0; }
+.mock-topbar .mb-crumbs {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12.5px; color: var(--fg-2);
+}
+.mock-topbar .mb-crumbs .seg.current { color: var(--fg-1); font-weight: 500; }
+.mock-topbar .mb-crumbs .slash { color: var(--fg-3); font-family: var(--font-mono); }
+.mock-topbar .mb-spacer { flex: 1; }
+.mock-topbar .mb-avatar {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--brand); color: var(--fg-on-brand);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 10.5px; font-weight: 600;
+}
+
+/* Connection pill (a few variants) */
+.conn-pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 26px; padding: 0 10px;
+  border-radius: var(--radius-full);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 11.5px;
+  font-family: var(--font-mono);
+  color: var(--fg-1);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.conn-pill .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  flex-shrink: 0;
+}
+.conn-pill .dot.success { background: var(--success); }
+.conn-pill .dot.success.pulse { position: relative; }
+.conn-pill .dot.success.pulse::after {
+  content: ""; position: absolute; inset: -3px;
+  border-radius: 50%;
+  border: 2px solid var(--success);
+  opacity: 0;
+  animation: ref-pulse 2.4s ease-out infinite;
+}
+.conn-pill .dot.warning { background: var(--warning); }
+.conn-pill .dot.critical { background: var(--critical); }
+.conn-pill .dot.gray { background: var(--fg-3); }
+.conn-pill .spinner {
+  width: 10px; height: 10px;
+  border: 1.5px solid var(--border-strong);
+  border-top-color: var(--fg-2);
+  border-radius: 50%;
+  animation: ref-spin 0.9s linear infinite;
+}
+.conn-pill.warn  { background: var(--warning-bg); border-color: color-mix(in oklab, var(--warning) 30%, transparent); color: var(--warning-fg); }
+.conn-pill.crit  { background: var(--critical-bg); border-color: color-mix(in oklab, var(--critical) 35%, transparent); color: var(--critical-fg); }
+.conn-pill.muted { background: var(--surface-2); color: var(--fg-2); }
+.conn-pill .meta { color: var(--fg-3); }
+.conn-pill.warn .meta { color: color-mix(in oklab, var(--warning-fg) 80%, transparent); }
+.conn-pill.crit .meta { color: color-mix(in oklab, var(--critical-fg) 80%, transparent); }
+
+@keyframes ref-pulse {
+  0%   { opacity: 0.6; transform: scale(0.6); }
+  60%  { opacity: 0; transform: scale(1.6); }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+@keyframes ref-spin { to { transform: rotate(360deg); } }
+
+/* Bed state card (Section 2) */
+.bed-card {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+  box-shadow: var(--shadow-1);
+}
+.bed-card .ico {
+  width: 36px; height: 36px;
+  border-radius: var(--radius-md);
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.bed-card .ico.tone-success { background: var(--success-bg); color: var(--success); }
+.bed-card .ico.tone-warning { background: var(--warning-bg); color: var(--warning); }
+.bed-card .ico.tone-critical{ background: var(--critical-bg);color: var(--critical); }
+.bed-card .ico.tone-neutral { background: var(--surface-2); color: var(--fg-2); }
+.bed-card .ico.tone-mystery { background: var(--surface-2); color: var(--fg-2); position: relative; }
+.bed-card .ico.tone-mystery::after {
+  content: "?";
+  position: absolute;
+  right: -2px; bottom: -3px;
+  width: 14px; height: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  font-size: 10px; font-weight: 700;
+  color: var(--fg-2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono);
+}
+.bed-card .txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.bed-card .state {
+  font-size: 14px; font-weight: 600;
+  color: var(--fg-1); line-height: 1.2;
+}
+.bed-card .meta {
+  font-size: 11.5px; color: var(--fg-3);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.bed-card .conf {
+  font-size: 11px; font-family: var(--font-mono);
+  color: var(--fg-3);
+  background: var(--surface-2);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.bed-card.tone-critical { background: var(--critical-bg); border-color: color-mix(in oklab, var(--critical) 30%, transparent); }
+.bed-card.tone-critical .state { color: var(--critical-fg); }
+.bed-card.tone-warning  { background: color-mix(in oklab, var(--warning-bg) 50%, var(--surface)); }
+
+/* Empty-state — all clear / no events / etc */
+.empty-card {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  display: flex; align-items: center; gap: 14px;
+  box-shadow: var(--shadow-1);
+}
+.empty-card.clear {
+  background: color-mix(in oklab, var(--success-bg) 60%, var(--surface));
+  border-color: color-mix(in oklab, var(--success) 22%, transparent);
+}
+.empty-card .ico {
+  width: 32px; height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  color: var(--fg-2);
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.empty-card.clear .ico {
+  background: color-mix(in oklab, var(--success-bg) 80%, transparent);
+  color: var(--success);
+}
+.empty-card .txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.empty-card .ttl { font-size: 13.5px; font-weight: 600; color: var(--fg-1); line-height: 1.25; }
+.empty-card .sub { font-size: 11.5px; color: var(--fg-3); font-family: var(--font-mono); }
+.empty-card.clear .ttl { color: var(--success-fg); }
+
+/* Skeleton */
+.skel {
+  background: linear-gradient(90deg,
+    var(--surface-2) 0%,
+    color-mix(in oklab, var(--border) 60%, var(--surface-2)) 50%,
+    var(--surface-2) 100%);
+  background-size: 200% 100%;
+  animation: skel-shimmer 1.6s ease-in-out infinite;
+  border-radius: 3px;
+}
+@keyframes skel-shimmer {
+  0%   { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+.skel.pulse-only {
+  background: var(--surface-2);
+  animation: skel-pulse 1.4s ease-in-out infinite;
+}
+@keyframes skel-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* Vital skeleton card */
+.vital-skel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  display: flex; flex-direction: column; gap: 10px;
+  box-shadow: var(--shadow-1);
+  min-height: 96px;
+}
+.vital-skel .lbl-skel { width: 36px; height: 9px; }
+.vital-skel .num-skel { width: 78px; height: 24px; }
+.vital-skel .ft-skel { width: 60%; height: 8px; margin-top: auto; }
+
+/* Timeline no-events */
+.tl-empty {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 22px 16px 30px;
+  height: 96px;
+}
+.tl-empty .axis {
+  position: absolute;
+  left: 16px; right: 16px;
+  bottom: 28px;
+  height: 1px;
+  background: var(--border);
+}
+.tl-empty .axis .tick {
+  position: absolute;
+  top: -2px;
+  width: 1px; height: 4px;
+  background: var(--border-strong);
+}
+.tl-empty .axis .tick-label {
+  position: absolute;
+  top: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  transform: translateX(-50%);
+}
+.tl-empty .now {
+  position: absolute;
+  top: 14px; bottom: 22px;
+  width: 1px;
+  background: var(--brand);
+}
+.tl-empty .now-lbl {
+  position: absolute;
+  top: -8px;
+  left: 2px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--brand);
+  background: var(--surface);
+  padding: 0 3px;
+}
+.tl-empty .msg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -90%);
+  font-size: 12px;
+  color: var(--fg-3);
+}
+
+/* Loading: video feed */
+.video-loading {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background:
+    radial-gradient(ellipse at center, #131c25 0%, #06090d 100%);
+  border-radius: var(--radius-md);
+  position: relative;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 14px;
+  color: rgba(245,245,244,0.78);
+  overflow: hidden;
+}
+.video-loading .mark-wrap {
+  color: var(--brand);
+  animation: ref-mark-pulse 1.8s ease-in-out infinite;
+}
+@keyframes ref-mark-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+.video-loading .title-text {
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+  color: rgba(245,245,244,0.9);
+}
+.video-loading .progress-bar {
+  width: 220px;
+  height: 2px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 1px;
+  overflow: hidden;
+}
+.video-loading .progress-bar .fill {
+  height: 100%;
+  width: 32%;
+  background: var(--brand);
+  animation: ref-progress 1.6s ease-in-out infinite;
+  border-radius: 1px;
+}
+@keyframes ref-progress {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(420%); }
+}
+.video-loading .grain {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 3px 3px;
+  pointer-events: none;
+}
+
+/* Timeline skeleton */
+.tl-skel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px 18px 22px;
+}
+.tl-skel .row { display: grid; grid-template-columns: 72px 1fr; gap: 12px; align-items: center; height: 22px; }
+.tl-skel .row + .row { margin-top: 4px; }
+.tl-skel .row .lane-lbl { height: 8px; width: 50px; }
+.tl-skel .row .lane {
+  position: relative; height: 1px;
+  background: var(--border);
+}
+.tl-skel .axis-row { padding-top: 10px; margin-top: 6px; border-top: 1px solid var(--border); }
+.tl-skel .axis-row .ticks { display: flex; justify-content: space-between; padding: 0 0; }
+.tl-skel .axis-row .ticks .t {
+  font-family: var(--font-mono); font-size: 10px; color: var(--fg-3);
+}
+
+/* Event review loading */
+.review-skel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface);
+}
+.review-skel .tabs {
+  display: flex; gap: 16px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.review-skel .tab {
+  font-size: 12.5px;
+  color: var(--fg-2);
+  padding: 6px 2px;
+  position: relative;
+}
+.review-skel .tab.active { color: var(--fg-1); font-weight: 500; }
+.review-skel .tab.active::after {
+  content: "";
+  position: absolute; left: 0; right: 0; bottom: -10px;
+  height: 1.5px; background: var(--brand);
+}
+.review-skel .body {
+  height: 240px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 14px;
+  color: var(--fg-3);
+}
+.review-skel .body .spinner {
+  width: 18px; height: 18px;
+  border: 1.5px solid var(--border-strong);
+  border-top-color: var(--brand);
+  border-radius: 50%;
+  animation: ref-spin 0.9s linear infinite;
+}
+.review-skel .body .label {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--fg-3);
+}
+
+/* Camera offline error state */
+.cam-error {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 28px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 14px;
+  text-align: center;
+}
+.cam-error .ico {
+  width: 44px; height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--fg-2);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.cam-error h4 {
+  margin: 0; font-size: 15px; font-weight: 600; color: var(--fg-1);
+}
+.cam-error p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--fg-2);
+  max-width: 360px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.cam-error .actions { display: inline-flex; gap: 8px; margin-top: 4px; }
+
+/* Toast */
+.toast {
+  display: inline-flex; align-items: center; gap: 10px;
+  height: 36px;
+  padding: 0 14px;
+  background: #1c1917;
+  color: #f5f5f4;
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.10);
+  font-size: 12.5px;
+  font-weight: 500;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.toast .spinner {
+  width: 12px; height: 12px;
+  border: 1.5px solid rgba(255,255,255,0.16);
+  border-top-color: #f5f5f4;
+  border-radius: 50%;
+  animation: ref-spin 0.9s linear infinite;
+}
+.toast .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
+.toast .sep { color: #a8a29e; font-family: var(--font-mono); padding: 0 2px; }
+.toast .x {
+  margin-left: 4px;
+  width: 18px; height: 18px;
+  background: transparent; border: none;
+  color: #a8a29e;
+  border-radius: 4px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.toast .x:hover { color: #fff; background: rgba(255,255,255,0.08); }
+
+/* Banner */
+.ref-banner {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--warning-bg);
+  border: 1px solid color-mix(in oklab, var(--warning) 28%, transparent);
+  border-radius: var(--radius-md);
+  font-size: 12.5px;
+}
+.ref-banner .ico { color: var(--warning); display: inline-flex; flex-shrink: 0; }
+.ref-banner .body { color: var(--warning-fg); flex: 1; line-height: 1.4; }
+.ref-banner .x {
+  background: transparent; border: none;
+  color: var(--warning-fg);
+  width: 22px; height: 22px;
+  border-radius: var(--radius-sm);
+  display: inline-flex; align-items: center; justify-content: center;
+  opacity: 0.7;
+}
+.ref-banner .x:hover { opacity: 1; background: color-mix(in oklab, var(--warning) 12%, transparent); }
+
+/* Critical alert row */
+.crit-row {
+  position: relative;
+  padding: 12px 14px 12px 22px;
+  background: var(--critical-bg);
+  border: 1px solid color-mix(in oklab, var(--critical) 28%, transparent);
+  border-radius: var(--radius-md);
+  display: flex; flex-direction: column; gap: 6px;
+  overflow: hidden;
+}
+.crit-row .stripe {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--critical);
+}
+.crit-row .top { display: flex; align-items: center; gap: 8px; }
+.crit-row .top .ico { color: var(--critical); display: inline-flex; }
+.crit-row .top .label {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--critical-fg);
+}
+.crit-row .top .sep {
+  font-family: var(--font-mono);
+  color: color-mix(in oklab, var(--critical-fg) 60%, transparent);
+}
+.crit-row .top .time {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--critical-fg);
+  font-variant-numeric: tabular-nums;
+}
+.crit-row .top .conf {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--critical-fg);
+  opacity: 0.72;
+}
+.crit-row .msg {
+  font-size: 13.5px; font-weight: 600;
+  color: var(--fg-1);
+  line-height: 1.35;
+}
+.crit-row .sub {
+  font-size: 11.5px;
+  color: var(--fg-2);
+  line-height: 1.4;
+}
+.crit-row .actions { display: inline-flex; gap: 6px; margin-top: 4px; }
+.crit-row .a-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 26px; padding: 0 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--fg-1);
+  border: 1px solid var(--border-strong);
+  font-size: 11.5px; font-weight: 500;
+}
+.crit-row .a-btn:hover { background: var(--surface-2); }
+.crit-row .a-btn.primary {
+  background: var(--critical); color: #fff; border-color: var(--critical);
+}
+.crit-row .a-btn.primary:hover { filter: brightness(0.94); }
+
+/* Critical modal */
+.crit-modal-stage {
+  position: relative;
+  background:
+    radial-gradient(ellipse at top, color-mix(in oklab, var(--critical) 4%, var(--bg)) 0%, var(--bg) 70%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 40px 16px 32px;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 360px;
+}
+.crit-modal-stage .stage-label {
+  position: absolute;
+  top: 12px; left: 14px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  letter-spacing: 0.04em;
+}
+.crit-modal-stage .scrim-hint {
+  position: absolute; inset: 24px;
+  background: rgba(0,0,0,0.06);
+  border-radius: var(--radius-md);
+  pointer-events: none;
+}
+[data-theme="dark"] .crit-modal-stage .scrim-hint { background: rgba(0,0,0,0.35); }
+
+.crit-modal {
+  position: relative;
+  width: 460px; max-width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+.crit-modal::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+  background: var(--critical);
+}
+.crit-modal .head {
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in oklab, var(--critical-bg) 50%, var(--surface));
+}
+.crit-modal .head .top-line {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 8px;
+}
+.crit-modal .head .top-line .pip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 9.5px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: var(--radius-sm);
+  background: var(--critical); color: #fff;
+}
+.crit-modal .head .top-line .esc {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10px; color: var(--fg-3);
+}
+.crit-modal .head .top-line .esc kbd {
+  background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: 3px; padding: 1px 5px;
+  font-size: 10px;
+}
+.crit-modal .head h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--fg-1);
+  letter-spacing: -0.008em;
+}
+.crit-modal .head .sub {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--fg-2);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.crit-modal .body { padding: 16px 22px; }
+.crit-modal .body .grid {
+  display: grid; grid-template-columns: 110px 1fr; gap: 10px 14px;
+  font-size: 12.5px;
+}
+.crit-modal .body .grid .k {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  align-self: center;
+}
+.crit-modal .body .grid .v {
+  color: var(--fg-1);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.crit-modal .body .grid .v.txt { font-family: var(--font-sans); }
+.crit-modal .foot {
+  display: flex; gap: 8px; padding: 14px 22px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.crit-modal .foot .spacer { flex: 1; }
+.crit-modal .foot .btn-ghost {
+  background: transparent; border: 1px solid transparent;
+  color: var(--fg-2);
+  height: 32px; padding: 0 12px;
+  border-radius: var(--radius-md); font-size: 13px; font-weight: 500;
+}
+.crit-modal .foot .btn-ghost:hover { color: var(--fg-1); background: var(--surface); }
+.crit-modal .foot .btn-sec {
+  background: var(--surface); border: 1px solid var(--border-strong);
+  color: var(--fg-1);
+  height: 32px; padding: 0 14px;
+  border-radius: var(--radius-md); font-size: 13px; font-weight: 500;
+}
+.crit-modal .foot .btn-sec:hover { background: var(--surface-2); }
+.crit-modal .foot .btn-pri {
+  background: var(--critical); border: 1px solid var(--critical);
+  color: #fff;
+  height: 32px; padding: 0 14px;
+  border-radius: var(--radius-md); font-size: 13px; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.crit-modal .foot .btn-pri:hover { filter: brightness(0.94); }
+
+/* Audio cue pill */
+.audio-cue {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: #1c1917;
+  color: #f5f5f4;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.audio-cue .wave {
+  display: inline-flex; align-items: center; gap: 2px;
+  height: 12px;
+}
+.audio-cue .wave .bar {
+  width: 2px; background: var(--brand);
+  border-radius: 1px;
+  animation: ref-audio-wave 0.9s ease-in-out infinite;
+}
+.audio-cue .wave .bar:nth-child(1) { height: 5px; animation-delay: 0s; }
+.audio-cue .wave .bar:nth-child(2) { height: 9px; animation-delay: 0.12s; }
+.audio-cue .wave .bar:nth-child(3) { height: 7px; animation-delay: 0.24s; }
+.audio-cue .wave .bar:nth-child(4) { height: 10px; animation-delay: 0.36s; }
+.audio-cue .wave .bar:nth-child(5) { height: 4px; animation-delay: 0.48s; }
+@keyframes ref-audio-wave {
+  0%, 100% { transform: scaleY(0.4); opacity: 0.55; }
+  50% { transform: scaleY(1); opacity: 1; }
+}
+
+/* Theme transition demo */
+.theme-demo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.theme-pane {
+  padding: 24px;
+  display: flex; flex-direction: column; gap: 14px;
+  min-height: 260px;
+}
+.theme-pane.light { background: #FAFAF9; color: #1C1917; }
+.theme-pane.dark  { background: #0A0A09; color: #F5F5F4; }
+.theme-pane .pane-lbl {
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  opacity: 0.45;
+}
+.theme-pane .demo-card {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+}
+.theme-pane.light .demo-card { background: #FFFFFF; border: 1px solid #E7E5E4; }
+.theme-pane.dark  .demo-card { background: #1C1C1B; border: 1px solid #292524; }
+.theme-pane .demo-card .lbl {
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  opacity: 0.55;
+  margin-bottom: 4px;
+}
+.theme-pane .demo-card .num {
+  font-family: var(--font-mono);
+  font-size: 26px; font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.theme-pane.light .demo-card .num { color: #1C1917; }
+.theme-pane.dark  .demo-card .num { color: #F5F5F4; }
+.theme-pane .demo-card .num .unit { font-size: 12px; opacity: 0.55; margin-left: 4px; }
+.theme-pane .chart-svg { width: 100%; height: 50px; display: block; }
+.theme-pane .swatches { display: flex; gap: 6px; }
+.theme-pane .sw {
+  flex: 1; height: 28px;
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10.5px; font-weight: 600;
+  font-family: var(--font-mono); letter-spacing: 0.04em;
+}
+.theme-pane.light .sw.brand { background: #F0FDFA; color: #115E59; border: 1px solid #99F6E4; }
+.theme-pane.dark  .sw.brand { background: rgba(45,212,191,0.12); color: #5EEAD4; border: 1px solid rgba(45,212,191,0.3); }
+.theme-pane.light .sw.crit  { background: #FFF1F2; color: #9F1239; border: 1px solid #FECDD3; }
+.theme-pane.dark  .sw.crit  { background: rgba(244,63,94,0.12); color: #FDA4AF; border: 1px solid rgba(244,63,94,0.3); }
+.theme-pane.light .sw.warn  { background: #FFFBEB; color: #92400E; border: 1px solid #FDE68A; }
+.theme-pane.dark  .sw.warn  { background: rgba(245,158,11,0.12); color: #FCD34D; border: 1px solid rgba(245,158,11,0.3); }
+.theme-pane.light .sw.succ  { background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
+.theme-pane.dark  .sw.succ  { background: rgba(16,185,129,0.12); color: #6EE7B7; border: 1px solid rgba(16,185,129,0.3); }
+
+/* Density variations */
+.density-demo {
+  display: grid;
+  gap: 12px;
+}
+.density-row {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+.density-row .d-lbl {
+  display: flex; flex-direction: column; gap: 3px;
+}
+.density-row .d-lbl .name {
+  font-size: 12px; font-weight: 600; color: var(--fg-1);
+}
+.density-row .d-lbl .meta {
+  font-size: 10.5px; font-family: var(--font-mono); color: var(--fg-3);
+}
+.density-row .d-body { display: grid; grid-template-columns: 200px 1fr; gap: 12px; }
+
+/* Density vital */
+.d-vital {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.d-vital .head {
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--fg-2);
+}
+.d-vital .num {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-1); letter-spacing: -0.02em;
+}
+.d-vital .unit { color: var(--fg-3); margin-left: 4px; }
+.d-vital.compact     { padding: 8px 10px; }
+.d-vital.compact .head { margin-bottom: 2px; font-size: 9px; }
+.d-vital.compact .num  { font-size: 22px; }
+.d-vital.compact .unit { font-size: 10px; }
+.d-vital.default     { padding: 12px 14px; }
+.d-vital.default .head { margin-bottom: 6px; }
+.d-vital.default .num  { font-size: 26px; }
+.d-vital.default .unit { font-size: 11px; }
+.d-vital.comfortable { padding: 18px 18px; }
+.d-vital.comfortable .head { margin-bottom: 10px; font-size: 11px; }
+.d-vital.comfortable .num  { font-size: 32px; }
+.d-vital.comfortable .unit { font-size: 13px; }
+
+/* Density list rows */
+.d-list {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.d-list .d-row {
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.d-list .d-row:last-child { border-bottom: 0; }
+.d-list .d-row .t {
+  font-family: var(--font-mono);
+  color: var(--fg-3);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.d-list .d-row .sev {
+  width: 6px; height: 6px; border-radius: 50%;
+  flex-shrink: 0;
+}
+.d-list .d-row .sev.info { background: var(--info); }
+.d-list .d-row .sev.warn { background: var(--warning); }
+.d-list .d-row .sev.crit { background: var(--critical); }
+.d-list .d-row .lbl { color: var(--fg-1); flex: 1; min-width: 0; }
+.d-list.compact      .d-row { padding: 5px 10px; font-size: 11.5px; }
+.d-list.compact      .d-row .t   { font-size: 10px; min-width: 38px; }
+.d-list.default      .d-row { padding: 9px 12px; font-size: 13px; }
+.d-list.default      .d-row .t   { font-size: 11px; min-width: 44px; }
+.d-list.comfortable  .d-row { padding: 14px 16px; font-size: 14px; }
+.d-list.comfortable  .d-row .t   { font-size: 12px; min-width: 52px; }
+
+/* Accessibility */
+.a11y-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+.a11y-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 10px;
+  box-shadow: var(--shadow-1);
+}
+.a11y-card .ttl {
+  font-size: 12px; font-weight: 600; color: var(--fg-1);
+}
+.a11y-card .desc { font-size: 11.5px; color: var(--fg-2); line-height: 1.5; }
+.a11y-card .demo {
+  background: var(--surface-2);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 10px; align-items: flex-start;
+}
+
+.focus-btn {
+  background: var(--brand);
+  color: var(--fg-on-brand);
+  border: none;
+  padding: 0 14px; height: 32px;
+  border-radius: var(--radius-md);
+  font-size: 13px; font-weight: 500;
+  position: relative;
+  /* Visible always for demo */
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px color-mix(in oklab, var(--brand) 50%, transparent);
+}
+.focus-input {
+  background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 0 10px; height: 32px;
+  font-size: 13px;
+  width: 200px;
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px color-mix(in oklab, var(--brand) 50%, transparent);
+}
+
+.skip-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--brand);
+  color: var(--fg-on-brand);
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  font-size: 12px; font-weight: 500;
+  text-decoration: none;
+  box-shadow: var(--shadow-2);
+}
+
+.contrast-row {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%;
+}
+.contrast-row .swatch {
+  height: 28px; padding: 0 10px;
+  border-radius: var(--radius-sm);
+  display: inline-flex; align-items: center;
+  font-size: 11.5px; font-weight: 600; font-family: var(--font-mono);
+}
+.contrast-row .swatch.crit { background: var(--critical-bg); color: var(--critical-fg); }
+.contrast-row .swatch.warn { background: var(--warning-bg); color: var(--warning-fg); }
+.contrast-row .swatch.succ { background: var(--success-bg); color: var(--success-fg); }
+.contrast-row .swatch.info { background: var(--info-bg); color: var(--info-fg); }
+.contrast-row .ratio {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-2);
+}
+.contrast-row .badge {
+  font-family: var(--font-mono);
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--fg-2);
+  border: 1px solid var(--border);
+  margin-left: auto;
+}
+
+.motion-list { display: flex; flex-direction: column; gap: 6px; }
+.motion-list .m-row {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px; color: var(--fg-2);
+}
+.motion-list .m-row .v {
+  font-family: var(--font-mono);
+  color: var(--fg-1);
+  font-size: 11px;
+}
+.motion-list .m-row .v.strike {
+  color: var(--fg-3);
+  text-decoration: line-through;
+}
+
+/* Tablet snapshot */
+.tablet-frame {
+  width: 768px;
+  max-width: 100%;
+  background: #1c1c1b;
+  padding: 16px 14px 14px;
+  border-radius: 28px;
+  margin: 0 auto;
+  box-shadow: var(--shadow-2);
+}
+.tablet-frame .bar {
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 8px;
+}
+.tablet-frame .bar .speaker {
+  width: 50px; height: 4px; background: #333130; border-radius: 2px;
+}
+.tablet-screen {
+  background: var(--bg);
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  position: relative;
+  height: 480px;
+  display: flex; flex-direction: column;
+}
+.tablet-topbar {
+  height: 44px; flex-shrink: 0;
+  display: flex; align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.tablet-topbar .name {
+  font-weight: 600; color: var(--fg-1); font-size: 13px;
+}
+.tablet-topbar .right { margin-left: auto; display: inline-flex; gap: 8px; align-items: center; }
+.tablet-content {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 10px;
+  padding: 10px;
+  min-height: 0;
+  overflow: hidden;
+}
+.tablet-video {
+  position: relative;
+  background: #0b1419;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.tablet-video .placeholder {
+  position: absolute; inset: 0;
+  background: linear-gradient(140deg, #1a2530, #0c141c);
+}
+.tablet-video .live {
+  position: absolute; top: 8px; left: 8px;
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(20,20,18,0.78);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #f5f5f4;
+}
+.tablet-video .live .rec {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--critical);
+}
+.tablet-side { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.tablet-vitals {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+}
+.tablet-vital {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+}
+.tablet-vital .h {
+  font-size: 9px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--fg-3);
+}
+.tablet-vital .n {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--fg-1);
+  margin-top: 2px;
+}
+.tablet-vital .n .u { font-size: 9px; color: var(--fg-3); margin-left: 3px; font-family: var(--font-sans); }
+.tablet-alerts {
+  flex: 1; min-height: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  overflow: hidden;
+}
+.tablet-alerts .h {
+  font-size: 9px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--fg-3);
+  margin-bottom: 6px;
+}
+.tablet-alerts .row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 0;
+  font-size: 10.5px;
+  color: var(--fg-1);
+}
+.tablet-alerts .row .dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  flex-shrink: 0;
+}
+.tablet-alerts .row .dot.warn { background: var(--warning); }
+.tablet-alerts .row .dot.crit { background: var(--critical); }
+.tablet-alerts .row .t {
+  margin-left: auto; font-family: var(--font-mono); font-size: 9.5px; color: var(--fg-3);
+}
+.tablet-fab {
+  position: absolute;
+  bottom: 14px; right: 14px;
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: var(--brand); color: var(--fg-on-brand);
+  display: inline-flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 14px rgba(15,118,110,0.36), 0 1px 3px rgba(0,0,0,0.10);
+  cursor: pointer;
+  border: none;
+}
+.tablet-fab .badge-num {
+  position: absolute;
+  top: -2px; right: -2px;
+  min-width: 16px; height: 16px;
+  background: var(--critical);
+  color: #fff;
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-size: 9px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--bg);
+}
+
+/* Suggested chip used in Ask Aida empty state */
+.suggest-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  color: var(--fg-1);
+  cursor: pointer;
+}
+.suggest-chip:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-subtle); }
+
+/* Footer */
+.ref-foot {
+  margin-top: 80px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--fg-3);
+}
+.ref-foot .left { display: inline-flex; gap: 12px; align-items: center; }
+
+/* Compact button reused in some sections */
+.r-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 30px; padding: 0 12px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--fg-1);
+  font-size: 12.5px; font-weight: 500;
+}
+.r-btn:hover { background: var(--surface-2); }
+.r-btn.primary {
+  background: var(--brand); color: var(--fg-on-brand); border-color: var(--brand);
+}
+.r-btn.primary:hover { background: var(--brand-hover); border-color: var(--brand-hover); }
+
+/* Reduced-motion section uses */
+.dot-success-static {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--success);
+}
+
+  </style>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" data-presets="env,react">
+/* global React */
+// Tokens, theme, brand mark, and a small icon set used across the page.
+
+const { useState, useEffect, useMemo, useRef } = React;
+
+// ----- Token data (rendered by the page) ---------------------------
+const COLOR_GROUPS = [
+  {
+    title: "Surfaces",
+    desc: "Backgrounds, cards, hairlines. Use position and contrast to define structure — not heavy strokes.",
+    items: [
+      { name: "bg",            light: "#FAFAF9", dark: "#0A0A09" },
+      { name: "surface",       light: "#FFFFFF", dark: "#1C1C1B" },
+      { name: "surface-2",     light: "#F5F5F4", dark: "#232220" },
+      { name: "border",        light: "#E7E5E4", dark: "#292524" },
+      { name: "border-strong", light: "#D6D3D1", dark: "#44403C" },
+    ],
+  },
+  {
+    title: "Text",
+    desc: "Three-step text scale. Reach for fg-2 by default for supporting copy; fg-3 is for low-priority metadata only.",
+    items: [
+      { name: "fg-1", light: "#1C1917", dark: "#F5F5F4" },
+      { name: "fg-2", light: "#57534E", dark: "#A8A29E" },
+      { name: "fg-3", light: "#A8A29E", dark: "#57534E" },
+    ],
+  },
+  {
+    title: "Brand",
+    desc: "A single muted teal. Use sparingly: active states, primary CTAs, the Aida accent.",
+    items: [
+      { name: "brand",        light: "#0F766E", dark: "#2DD4BF" },
+      { name: "brand-hover",  light: "#115E59", dark: "#5EEAD4" },
+      { name: "brand-subtle", light: "#F0FDFA", dark: "rgba(45,212,191,0.10)" },
+    ],
+  },
+  {
+    title: "Semantic",
+    desc: "Desaturated by design — none of these should startle when used at small sizes. Red is reserved for genuinely critical states.",
+    items: [
+      { name: "critical", light: "#E11D48", dark: "#F43F5E" },
+      { name: "warning",  light: "#D97706", dark: "#F59E0B" },
+      { name: "success",  light: "#059669", dark: "#10B981" },
+      { name: "info",     light: "#0284C7", dark: "#0EA5E9" },
+    ],
+  },
+];
+
+const TYPE_SCALE = [
+  { name: "display", spec: "48 / 1.05 / 500 · mono · tabular-nums", className: "display", sample: "72" },
+  { name: "h1",      spec: "24 / 1.25 / 600 · sans",                style: { fontSize: 24, fontWeight: 600, letterSpacing: "-0.011em" }, sample: "Patient overview" },
+  { name: "h2",      spec: "18 / 1.35 / 600 · sans",                style: { fontSize: 18, fontWeight: 600, letterSpacing: "-0.006em" }, sample: "Recent events" },
+  { name: "body",    spec: "14 / 1.5 / 400 · sans",                 style: { fontSize: 14, fontWeight: 400 },                          sample: "Aida summarized the last shift handoff and flagged two events for review." },
+  { name: "small",   spec: "12 / 1.4 / 500 · sans",                 style: { fontSize: 12, fontWeight: 500, color: "var(--fg-2)" },    sample: "Last updated 2 minutes ago" },
+  { name: "tiny",    spec: "11 / 1.3 / 400 · mono",                 style: { fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--fg-3)" }, sample: "MRN 4837210 · BED ICU-04" },
+];
+
+const SPACING = [
+  { name: "space-1",  px: 4  },
+  { name: "space-2",  px: 8  },
+  { name: "space-3",  px: 12 },
+  { name: "space-4",  px: 16 },
+  { name: "space-6",  px: 24 },
+  { name: "space-8",  px: 32 },
+  { name: "space-12", px: 48 },
+  { name: "space-16", px: 64 },
+];
+
+const RADII = [
+  { name: "radius-sm", px: 4, use: "badges · chips" },
+  { name: "radius-md", px: 6, use: "buttons · inputs · cards" },
+  { name: "radius-lg", px: 8, use: "panels · modals" },
+];
+
+// ----- Brand mark --------------------------------------------------
+function AidaMark({ size = 28, className = "", style = {} }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 64 64"
+      fill="none"
+      className={className}
+      style={style}
+      aria-label="Aida"
+    >
+      <path
+        fill="currentColor"
+        fillRule="evenodd"
+        d="M14 0h36a14 14 0 0 1 14 14v36a14 14 0 0 1-14 14H14A14 14 0 0 1 0 50V14A14 14 0 0 1 14 0Zm-2 25a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h40a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H12Z"
+      />
+    </svg>
+  );
+}
+
+// ----- Theme toggle ------------------------------------------------
+function useTheme() {
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem("aida-theme") || "light"; }
+    catch { return "light"; }
+  });
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try { localStorage.setItem("aida-theme", theme); } catch {}
+  }, [theme]);
+  return [theme, setTheme];
+}
+
+function ThemeToggle({ theme, setTheme }) {
+  return (
+    <button
+      type="button"
+      onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+      className="btn secondary md"
+      aria-label={`Switch to ${theme === "light" ? "dark" : "light"} theme`}
+      title={`Switch to ${theme === "light" ? "dark" : "light"} theme`}
+    >
+      {theme === "light" ? <Icon name="moon" size={14} /> : <Icon name="sun" size={14} />}
+      <span style={{ marginLeft: 4 }}>{theme === "light" ? "Dark" : "Light"}</span>
+    </button>
+  );
+}
+
+// ----- Small inline icon set (Lucide-style, 1.5px stroke) ---------
+const ICONS = {
+  search: "M11 4a7 7 0 1 1 0 14 7 7 0 0 1 0-14ZM21 21l-4.3-4.3",
+  chevronDown: "m6 9 6 6 6-6",
+  check: "M5 12.5 9.5 17 19 7",
+  plus: "M12 5v14M5 12h14",
+  x: "M6 6l12 12M18 6L6 18",
+  arrowUp:    "M12 19V5M5 12l7-7 7 7",
+  arrowDown:  "M12 5v14M5 12l7 7 7-7",
+  arrowRight: "M5 12h14M13 5l7 7-7 7",
+  arrowFlat:  "M5 12h14",
+  alert:      "M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01",
+  info:       "M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18zM12 8h.01M11 12h1v4h1",
+  shieldAlert:"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM12 8v4M12 16h.01",
+  sun:        "M12 3v2M12 19v2M5 12H3M21 12h-2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4M12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10z",
+  moon:       "M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z",
+  more:       "M5 12h.01M12 12h.01M19 12h.01",
+  stethoscope:"M6 3v6a4 4 0 0 0 8 0V3M9 21a3 3 0 0 1-3-3v-3M9 21a3 3 0 0 0 3-3v-3M18 8a2 2 0 1 1 0 4 2 2 0 0 1 0-4z",
+  activity:   "M22 12h-4l-3 9L9 3l-3 9H2",
+  bed:        "M3 18V8h11a5 5 0 0 1 5 5v5M3 14h18M3 21v-3M21 21v-3M7 11a2 2 0 1 1 0-4 2 2 0 0 1 0 4z",
+  pill:       "M10.5 20.5a7 7 0 0 1-10-10l10-10a7 7 0 1 1 10 10l-10 10zM8.5 8.5l7 7",
+  bell:       "M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 0 0 4 0",
+  command:    "M18 6a3 3 0 1 1 0 6h-3V6h3zM18 18a3 3 0 1 0 0-6h-3v6h3zM6 6a3 3 0 1 0 0 6h3V6H6zM6 18a3 3 0 1 1 0-6h3v6H6z",
+  video:      "M23 7l-7 5 7 5V7zM1 5h15v14H1z",
+  camera:     "M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2v11zM12 17a4 4 0 1 1 0-8 4 4 0 0 1 0 8z",
+  send:       "M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z",
+  chevronRight: "m9 18 6-6-6-6",
+  chevronLeft:  "m15 18-6-6 6-6",
+  chevronUp:    "m18 15-6-6-6 6",
+  user:       "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8z",
+  userCheck:  "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8zM17 11l2 2 4-4",
+  userX:      "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8zM18 8l5 5M23 8l-5 5",
+  clock:      "M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18zM12 7v5l3 2",
+  expand:     "M4 14v6h6M20 10V4h-6M14 10l7-7M3 21l7-7",
+  circle:     "M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z",
+  bedExit:    "M3 18V8h11a5 5 0 0 1 5 5v5M3 14h12M3 21v-3M21 21v-3M16 4l5 5M21 4l-5 5",
+  footprints: "M4 16a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v2H4v-2zM13 6a3 3 0 0 1 3-3h0a3 3 0 0 1 3 3v2h-6V6z",
+  eye:        "M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12zM12 15a3 3 0 1 1 0-6 3 3 0 0 1 0 6z",
+  refresh:    "M21 12a9 9 0 0 1-15.5 6.3L1 14M3 12a9 9 0 0 1 15.5-6.3L23 10M1 4v6h6M23 20v-6h-6",
+  mic:        "M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8",
+  trendingDown:"M22 17l-9.5-9.5-5 5L1 6M16 17h6v-6",
+  trendingFlat:"M5 12h14",
+  chart:      "M3 3v18h18M7 14l4-4 3 3 5-6",
+  pin:        "M12 17v5M5 8a7 7 0 0 1 14 0c0 3-2 6-7 9-5-3-7-6-7-9z",
+  filter:     "M3 4h18l-7 9v7l-4-2v-5L3 4z",
+  layers:     "M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5",
+  zap:        "M13 2 3 14h7l-1 8 10-12h-7l1-8z",
+  panelRightClose: "M3 4a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4zM15 3v18M10 15l-3-3 3-3",
+  panelRightOpen:  "M3 4a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4zM15 3v18M8 9l3 3-3 3",
+};
+
+function Icon({ name, size = 16, strokeWidth = 1.5, className = "", style = {} }) {
+  const d = ICONS[name];
+  if (!d) return null;
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      style={{ flexShrink: 0, ...style }}
+      aria-hidden="true"
+    >
+      {d.split("M").filter(Boolean).map((seg, i) => (
+        <path key={i} d={"M" + seg} />
+      ))}
+    </svg>
+  );
+}
+
+Object.assign(window, {
+  COLOR_GROUPS, TYPE_SCALE, SPACING, RADII,
+  AidaMark, ThemeToggle, useTheme, Icon,
+});
+
+  </script>
+  <script type="text/babel" data-presets="env,react">
+/* global React, Icon, AidaMark */
+// Aida State Reference — Sections 1-5
+
+const { useState: useStateA, useEffect: useEffectA, useRef: useRefA } = React;
+
+// ============================================================
+// SECTION 1 — Connection states
+// ============================================================
+function ConnectionStates() {
+  const variants = [
+    {
+      name: "Connected",
+      caption: "default · stream ok · 23 fps",
+      pill: (
+        <span className="conn-pill">
+          <span className="dot success pulse" />
+          Live
+        </span>
+      ),
+    },
+    {
+      name: "Reconnecting",
+      caption: "transient · retrying every 2s",
+      pill: (
+        <span className="conn-pill warn">
+          <span className="dot warning" />
+          <span className="spinner" />
+          Reconnecting…
+        </span>
+      ),
+    },
+    {
+      name: "Degraded",
+      caption: "stream up · bandwidth-limited",
+      pill: (
+        <span className="conn-pill warn">
+          <span className="dot warning" />
+          Low FPS <span className="meta">— 8 fps</span>
+        </span>
+      ),
+    },
+    {
+      name: "Offline",
+      caption: "no frames in 2m · backup queued",
+      pill: (
+        <span className="conn-pill crit">
+          <span className="dot critical" />
+          Offline <span className="meta">· last seen 2m ago</span>
+        </span>
+      ),
+    },
+    {
+      name: "Initializing",
+      caption: "first connect · pre-stream",
+      pill: (
+        <span className="conn-pill muted">
+          <span className="dot gray" />
+          <span className="spinner" />
+          Initializing…
+        </span>
+      ),
+    },
+  ];
+
+  return (
+    <section id="s1" className="ref-section">
+      <SectionHead
+        num="01"
+        tag="Status"
+        title="Connection states"
+        desc="The pill in the top bar communicates the health of the bedside camera stream. It never alarms — degraded states use amber, full loss uses red, but the rest of the chrome stays calm."
+      />
+
+      {/* Each row: full top-bar mock with the pill in its real position */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {variants.map((v) => (
+          <div key={v.name} className="var">
+            <div className="var-cap">
+              <span className="name">{v.name}</span>
+              <span className="meta">{v.caption}</span>
+            </div>
+            <div className="var-stage flush" style={{ background: "transparent", border: "none", padding: 0 }}>
+              <MockTopBar trailing={v.pill} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function MockTopBar({ trailing }) {
+  return (
+    <div className="mock-topbar">
+      <span className="mb-mark"><AidaMark size={20} /></span>
+      <span className="mb-crumbs">
+        <span className="seg">Wards</span>
+        <span className="slash">/</span>
+        <span className="seg">ICU-2</span>
+        <span className="slash">/</span>
+        <span className="seg current">Bed 4</span>
+      </span>
+      <span className="mb-spacer" />
+      {trailing}
+      <span className="mb-avatar">RP</span>
+    </div>
+  );
+}
+
+// ============================================================
+// SECTION 2 — Bed state variations
+// ============================================================
+function BedStates() {
+  const states = [
+    { name: "In bed",            tone: "tone-success",  icon: "bed",         meta: "Confirmed 47s ago",  conf: "0.96", desc: "calm · default" },
+    { name: "Sitting on edge",   tone: "tone-warning",  icon: "bed",         meta: "Detected 14s ago",   conf: "0.88", desc: "watch" },
+    { name: "Out of bed",        tone: "tone-warning",  icon: "footprints",  meta: "Out for 1m 22s",      conf: "0.93", desc: "watch · pre-fall risk" },
+    { name: "On floor",          tone: "tone-critical", icon: "shieldAlert", meta: "Detected 6s ago",     conf: "0.97", desc: "fall · escalate immediately", critical: true },
+    { name: "Bed empty",         tone: "tone-neutral",  icon: "bed",         meta: "Patient off scene",   conf: "0.91", desc: "patient not present" },
+    { name: "Unknown",           tone: "tone-mystery",  icon: "circle",      meta: "View obstructed",     conf: "0.42", desc: "low-confidence", mystery: true },
+  ];
+
+  return (
+    <section id="s2" className="ref-section">
+      <SectionHead
+        num="02"
+        tag="Detector"
+        title="Bed state variations"
+        desc="The bed-state card is the primary surface for Aida's spatial inference. Color tracks clinical urgency, never inference confidence — that's surfaced separately as a number."
+      />
+
+      <div className="var-grid cols-3">
+        {states.map((s) => (
+          <div key={s.name} className="var">
+            <div className="var-cap">
+              <span className="name">{s.name}</span>
+              <span className="meta">{s.desc}</span>
+            </div>
+            <div className={`bed-card ${s.critical ? "tone-critical" : ""} ${s.tone === "tone-warning" ? "tone-warning" : ""}`}>
+              <span className={`ico ${s.tone}`}>
+                <Icon name={s.icon} size={16} />
+              </span>
+              <div className="txt">
+                <span className="state">{s.name}</span>
+                <span className="meta">{s.meta}</span>
+              </div>
+              <span className="conf">{s.conf}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ============================================================
+// SECTION 3 — Empty states
+// ============================================================
+function EmptyStates() {
+  return (
+    <section id="s3" className="ref-section">
+      <SectionHead
+        num="03"
+        tag="Zero data"
+        title="Empty states"
+        desc="When there's nothing to show, the panels stay quiet — never marketing copy, never illustration. Aida communicates the absence of signal as a fact, not a feature."
+      />
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        {/* No alerts */}
+        <Variant name="No alerts" caption="alerts panel · zero active">
+          <div className="empty-card clear">
+            <span className="ico">
+              <Icon name="check" size={16} strokeWidth={2} />
+            </span>
+            <div className="txt">
+              <span className="ttl">All clear · No active alerts</span>
+              <span className="sub">Last alert cleared 2h ago</span>
+            </div>
+          </div>
+        </Variant>
+
+        {/* No timeline events */}
+        <Variant name="No timeline events" caption="last hour · no signal">
+          <EmptyTimeline />
+        </Variant>
+
+        {/* No vitals yet */}
+        <Variant name="No vitals yet" caption="post-connect · OCR warming">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+            {["HR", "BP", "SpO₂", "RR"].map((lbl) => (
+              <div key={lbl} className="vital-skel">
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div className="lbl-skel skel pulse-only" />
+                  <div style={{ marginLeft: "auto", width: 10, height: 8 }} className="skel pulse-only" />
+                </div>
+                <div className="num-skel skel pulse-only" />
+                <div className="ft-skel skel pulse-only" />
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 8, fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--fg-3)" }}>
+            Reading vitals from monitor… first frame in 3–5s.
+          </div>
+        </Variant>
+
+        {/* No staff history */}
+        <Variant name="No staff history" caption="staff card · pristine">
+          <div className="bed-card">
+            <span className="ico tone-neutral">
+              <Icon name="userX" size={16} />
+            </span>
+            <div className="txt">
+              <span className="state" style={{ color: "var(--fg-2)", fontWeight: 500 }}>No staff visits recorded yet</span>
+              <span className="meta">Detection window: last 12h</span>
+            </div>
+          </div>
+        </Variant>
+
+        {/* Ask Aida — first message */}
+        <Variant name="Ask Aida — first message" caption="assistant panel · cold state">
+          <AskAidaCold />
+        </Variant>
+      </div>
+    </section>
+  );
+}
+
+function EmptyTimeline() {
+  return (
+    <div className="tl-empty">
+      <div className="now" style={{ left: "78%" }}>
+        <span className="now-lbl">now</span>
+      </div>
+      <div className="msg">No events in the last hour</div>
+      <div className="axis">
+        {["07:00", "07:15", "07:30", "07:45", "08:00"].map((t, i) => {
+          const left = (i / 4) * 100;
+          return (
+            <React.Fragment key={t}>
+              <span className="tick" style={{ left: `${left}%` }} />
+              <span className="tick-label" style={{ left: `${left}%` }}>{t}</span>
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function AskAidaCold() {
+  const chips = [
+    "What's changed in the last 30 minutes?",
+    "Any vitals trending out of range?",
+    "Who last entered the room?",
+    "Summarize the night shift",
+  ];
+  return (
+    <div style={{
+      background: "var(--surface)",
+      border: "1px solid var(--border)",
+      borderRadius: "var(--radius-lg)",
+      padding: 20,
+      boxShadow: "var(--shadow-1)",
+    }}>
+      <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+        <span style={{
+          width: 30, height: 30, borderRadius: 6,
+          background: "var(--surface)", border: "1px solid var(--border)",
+          color: "var(--brand)",
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          flexShrink: 0,
+        }}>
+          <AidaMark size={18} />
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--brand)", marginBottom: 4 }}>
+            Aida
+          </div>
+          <div style={{ fontSize: 13.5, color: "var(--fg-1)", lineHeight: 1.55 }}>
+            Patient is stable. HR 72, BP 118/76, SpO₂ 96%, RR 14. Last position change 23 minutes ago. No alerts in the past hour.
+          </div>
+          <div style={{ marginTop: 10, display: "inline-flex", gap: 6, flexWrap: "wrap" }}>
+            {[
+              { ico: "activity", label: "Vitals 07:42" },
+              { ico: "clock",    label: "Position 07:19" },
+            ].map((c) => (
+              <span key={c.label} style={{
+                display: "inline-flex", alignItems: "center", gap: 4,
+                fontFamily: "var(--font-mono)", fontSize: 11,
+                color: "var(--fg-2)",
+                background: "var(--surface-2)", border: "1px solid var(--border)",
+                borderRadius: "var(--radius-full)", padding: "2px 8px",
+              }}>
+                <Icon name={c.ico} size={11} strokeWidth={1.75} /> {c.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div style={{
+        fontSize: 10, fontWeight: 600, letterSpacing: "0.08em",
+        textTransform: "uppercase", color: "var(--fg-3)", marginBottom: 8,
+      }}>
+        Suggested
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {chips.map((c) => (
+          <button key={c} type="button" className="suggest-chip">{c}</button>
+        ))}
+      </div>
+
+      <div style={{
+        marginTop: 16, paddingTop: 12,
+        borderTop: "1px solid var(--border)",
+        display: "flex", alignItems: "center", gap: 8,
+      }}>
+        <div style={{
+          flex: 1,
+          height: 34,
+          background: "var(--surface-2)",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius-md)",
+          display: "flex", alignItems: "center",
+          padding: "0 12px",
+          fontSize: 12.5, color: "var(--fg-3)",
+        }}>
+          Ask Aida about this patient…
+        </div>
+        <button type="button" className="r-btn primary" disabled style={{ opacity: 0.5 }}>
+          <Icon name="send" size={12} strokeWidth={2} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// SECTION 4 — Loading states
+// ============================================================
+function LoadingStates() {
+  return (
+    <section id="s4" className="ref-section">
+      <SectionHead
+        num="04"
+        tag="In-flight"
+        title="Loading states"
+        desc="Loading should reassure, never spin endlessly without context. Always name the source (which camera, which monitor) and where possible, show progress."
+      />
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        <Variant name="Video feed loading" caption="bedside cam · first connect">
+          <div className="video-loading">
+            <div className="grain" />
+            <div className="mark-wrap"><AidaMark size={36} /></div>
+            <div className="title-text">Connecting to Bedside Cam 1…</div>
+            <div className="progress-bar"><div className="fill" /></div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "rgba(245,245,244,0.45)" }}>
+              Handshake · negotiating codec
+            </div>
+          </div>
+        </Variant>
+
+        <Variant name="Vitals card loading" caption="4-up · skeleton + subtle pulse">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+            {["HR","BP","SpO₂","RR"].map((lbl, i) => (
+              <div key={lbl} className="vital-skel">
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{
+                    fontSize: 10, fontWeight: 600, letterSpacing: "0.1em",
+                    textTransform: "uppercase", color: "var(--fg-3)",
+                  }}>{lbl}</div>
+                </div>
+                <div className="num-skel skel" style={{ animationDelay: `${i * 120}ms` }} />
+                <div className="ft-skel skel" style={{ animationDelay: `${i * 120 + 80}ms` }} />
+              </div>
+            ))}
+          </div>
+        </Variant>
+
+        <Variant name="Timeline loading" caption="lanes drawn · markers pending">
+          <TimelineSkel />
+        </Variant>
+
+        <Variant name="Event review loading" caption="tabs visible · evidence pending">
+          <ReviewSkel />
+        </Variant>
+      </div>
+    </section>
+  );
+}
+
+function TimelineSkel() {
+  const lanes = [
+    { lbl: "Critical", color: "var(--critical)" },
+    { lbl: "Warning",  color: "var(--warning)" },
+    { lbl: "Info",     color: "var(--info)" },
+    { lbl: "Vitals",   color: "var(--fg-3)" },
+  ];
+  return (
+    <div className="tl-skel">
+      {lanes.map((l) => (
+        <div key={l.lbl} className="row">
+          <div style={{
+            display: "flex", alignItems: "center", gap: 6,
+            fontSize: 9.5, fontWeight: 600, letterSpacing: "0.08em",
+            textTransform: "uppercase", color: "var(--fg-3)",
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: l.color, opacity: 0.5 }} />
+            {l.lbl}
+          </div>
+          <div className="lane">
+            {/* Faint dotted "expected event positions" */}
+            {[18, 38, 64, 82].map((pct) => (
+              <span key={pct} style={{
+                position: "absolute",
+                left: `${pct}%`, top: "50%",
+                width: 6, height: 6,
+                background: "var(--border-strong)",
+                borderRadius: "50%",
+                transform: "translate(-50%, -50%)",
+                opacity: 0.6,
+                animation: "skel-pulse 1.6s ease-in-out infinite",
+                animationDelay: `${pct * 8}ms`,
+              }} />
+            ))}
+          </div>
+        </div>
+      ))}
+      <div className="axis-row">
+        <div style={{ display: "grid", gridTemplateColumns: "72px 1fr", gap: 12 }}>
+          <div />
+          <div className="ticks">
+            {["04:00","05:00","06:00","07:00","08:00"].map((t) => (
+              <span key={t} className="t">{t}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReviewSkel() {
+  return (
+    <div className="review-skel">
+      <div className="tabs">
+        <span className="tab active">Evidence</span>
+        <span className="tab">Timeline</span>
+        <span className="tab">Vitals context</span>
+        <span className="tab">Notes</span>
+      </div>
+      <div className="body">
+        <div className="spinner" />
+        <div className="label">Loading evidence…</div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// SECTION 5 — Error states
+// ============================================================
+function ErrorStates() {
+  return (
+    <section id="s5" className="ref-section">
+      <SectionHead
+        num="05"
+        tag="Failure"
+        title="Error states"
+        desc="Aida tells clinicians what failed, what it's already doing about it, and what they can do next. Errors are never red unless a patient is at risk."
+      />
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        <Variant name="Camera offline" caption="calm · self-recovery in progress">
+          <CamOfflineError />
+        </Variant>
+
+        <Variant name="Failed note save" caption="toast · auto-retry then success">
+          <ToastDemo />
+        </Variant>
+
+        <Variant name="API timeout" caption="banner · dismissible">
+          <div className="ref-banner">
+            <span className="ico"><Icon name="alert" size={15} /></span>
+            <span className="body">
+              <strong style={{ fontWeight: 600 }}>Aida is taking longer than usual to respond.</strong>{" "}
+              Some data may be delayed.
+            </span>
+            <button type="button" className="x" aria-label="Dismiss">
+              <Icon name="x" size={14} />
+            </button>
+          </div>
+        </Variant>
+      </div>
+    </section>
+  );
+}
+
+function CamOfflineError() {
+  return (
+    <div className="cam-error">
+      <span className="ico">
+        <Icon name="camera" size={20} />
+      </span>
+      <h4>Bedside Cam 1 is offline</h4>
+      <p>
+        Aida is attempting to reconnect every 10 seconds.<br />
+        Last successful frame: 07:42 (4 min ago)
+      </p>
+      <div className="actions">
+        <button type="button" className="r-btn primary">
+          <Icon name="refresh" size={13} strokeWidth={2} />
+          Switch to backup camera
+        </button>
+        <button type="button" className="r-btn">
+          <Icon name="video" size={13} />
+          View last 1 min
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ToastDemo() {
+  // Cycles: retrying → saved
+  const [phase, setPhase] = useStateA("retrying");
+  useEffectA(() => {
+    const t1 = setTimeout(() => setPhase("saved"),  3000);
+    const t2 = setTimeout(() => setPhase("retrying"), 6000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [phase]);
+
+  return (
+    <div style={{
+      background: "var(--surface-2)",
+      border: "1px dashed var(--border)",
+      borderRadius: "var(--radius-md)",
+      padding: 24,
+      display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
+    }}>
+      <div className="toast">
+        {phase === "retrying" ? (
+          <>
+            <span className="spinner" />
+            <span>Could not save note</span>
+            <span className="sep">·</span>
+            <span style={{ color: "#a8a29e" }}>Retrying…</span>
+          </>
+        ) : (
+          <>
+            <span className="dot" />
+            <span>Saved</span>
+          </>
+        )}
+      </div>
+      <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--fg-3)" }}>
+        State cycles every 3s · {phase === "retrying" ? "1 / 2" : "2 / 2"}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Shared helpers
+// ============================================================
+function SectionHead({ num, tag, title, desc }) {
+  return (
+    <div className="ref-section-head">
+      <div className="meta">
+        <span className="num">§ {num}</span>
+        <span className="tag">{tag}</span>
+      </div>
+      <h2>{title}</h2>
+      <p className="desc">{desc}</p>
+    </div>
+  );
+}
+
+function Variant({ name, caption, children, full = false }) {
+  return (
+    <div className="var">
+      <div className="var-cap">
+        <span className="name">{name}</span>
+        <span className="meta">{caption}</span>
+      </div>
+      {full ? children : (
+        <div className="var-stage flush" style={{ background: "transparent", border: "none", padding: 0 }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+Object.assign(window, {
+  ConnectionStates, BedStates, EmptyStates, LoadingStates, ErrorStates,
+  SectionHead, Variant, MockTopBar,
+});
+
+  </script>
+  <script type="text/babel" data-presets="env,react">
+/* global React, Icon, AidaMark, SectionHead, Variant */
+// Aida State Reference — Sections 6-10
+
+const { useState: useStateB, useEffect: useEffectB, useRef: useRefB } = React;
+
+// ============================================================
+// SECTION 6 — Critical alert handling
+// ============================================================
+function CriticalAlerts() {
+  const [audioVisible, setAudioVisible] = useStateB(true);
+
+  // Cycle the audio indicator for the demo
+  useEffectB(() => {
+    const i = setInterval(() => setAudioVisible((v) => !v), 3000);
+    return () => clearInterval(i);
+  }, []);
+
+  return (
+    <section id="s6" className="ref-section">
+      <SectionHead
+        num="06"
+        tag="Escalation"
+        title="Critical alert handling"
+        desc="A genuinely critical event is allowed to break Aida's calm posture. The chrome stays steady; the alert itself owns the red. We earn the clinician's eye by spending it rarely."
+      />
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        <Variant name="Critical row in active alerts" caption="list item · 4px stripe · rose-50">
+          <div className="crit-row">
+            <span className="stripe" />
+            <div className="top">
+              <span className="ico"><Icon name="shieldAlert" size={14} /></span>
+              <span className="label">Fall confirmed</span>
+              <span className="sep">·</span>
+              <span className="time">07:46:12</span>
+              <span className="conf">conf 0.97</span>
+            </div>
+            <div className="msg">Patient on floor — left side of bed</div>
+            <div className="sub">
+              No staff in room for 8 minutes prior. HR rising (78 → 96 bpm in 40s).
+            </div>
+            <div className="actions">
+              <button className="a-btn primary">
+                <Icon name="bell" size={11} strokeWidth={2} />
+                Respond now
+              </button>
+              <button className="a-btn">Acknowledge</button>
+              <button className="a-btn">Open review</button>
+            </div>
+          </div>
+        </Variant>
+
+        <Variant name="Critical modal — FALL_CONFIRMED" caption="centered · scrim · Esc to dismiss">
+          <div className="crit-modal-stage">
+            <div className="scrim-hint" />
+            <span className="stage-label">scrim · 40% black</span>
+            <div className="crit-modal" role="dialog" aria-labelledby="crit-title">
+              <div className="head">
+                <div className="top-line">
+                  <span className="pip">
+                    <Icon name="shieldAlert" size={10} strokeWidth={2.5} />
+                    Critical
+                  </span>
+                  <span className="esc">
+                    Dismiss <kbd>Esc</kbd>
+                  </span>
+                </div>
+                <h3 id="crit-title">Fall confirmed — Bed ICU-04</h3>
+                <p className="sub">07:46:12 · 14 seconds ago · conf 0.97</p>
+              </div>
+              <div className="body">
+                <div className="grid">
+                  <span className="k">Patient</span>
+                  <span className="v txt">Margaret Chen · 67F · MRN 4837210</span>
+                  <span className="k">Detected</span>
+                  <span className="v txt">Patient on floor, left of bed (Bedside Cam 1)</span>
+                  <span className="k">Last vitals</span>
+                  <span className="v">HR 96 bpm · BP 124/82 · SpO₂ 95% · RR 22</span>
+                  <span className="k">Staff in room</span>
+                  <span className="v txt">None — last visit 07:38 (8 min ago)</span>
+                </div>
+              </div>
+              <div className="foot">
+                <button className="btn-ghost">Acknowledge</button>
+                <span className="spacer" />
+                <button className="btn-sec">Open review</button>
+                <button className="btn-pri">
+                  <Icon name="bell" size={13} strokeWidth={2} />
+                  Respond now
+                </button>
+              </div>
+            </div>
+          </div>
+        </Variant>
+
+        <Variant name="Audio cue indicator" caption="single tone on fire · indicator visible 2s">
+          <div style={{
+            background: "var(--surface-2)",
+            border: "1px dashed var(--border)",
+            borderRadius: "var(--radius-md)",
+            padding: 22,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 16,
+            minHeight: 72,
+          }}>
+            <div style={{
+              opacity: audioVisible ? 1 : 0,
+              transform: audioVisible ? "translateY(0)" : "translateY(-4px)",
+              transition: "opacity 200ms ease-out, transform 200ms ease-out",
+            }}>
+              <div className="audio-cue">
+                <span className="wave">
+                  <span className="bar" /><span className="bar" /><span className="bar" />
+                  <span className="bar" /><span className="bar" />
+                </span>
+                <span>Audio alert played</span>
+              </div>
+            </div>
+            <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--fg-3)" }}>
+              {audioVisible ? "visible · 2s window" : "hidden"}
+            </div>
+          </div>
+        </Variant>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================
+// SECTION 7 — Theme transitions
+// ============================================================
+function ThemeTransitions() {
+  return (
+    <section id="s7" className="ref-section">
+      <SectionHead
+        num="07"
+        tag="Theme"
+        title="Theme transitions"
+        desc="Light ↔ dark crossfade is a single 150ms ease-out on background and text color. Severity hues, charts, and brand teal must all remain legible on either side."
+      />
+
+      <div className="theme-demo">
+        <div className="theme-pane light">
+          <div className="pane-lbl">Light · default shift</div>
+          <ThemeDemoChart light />
+          <div className="demo-card">
+            <div className="lbl">HR · bedside cam OCR</div>
+            <div className="num">72<span className="unit"> bpm</span></div>
+          </div>
+          <div className="swatches">
+            <span className="sw brand">Brand</span>
+            <span className="sw crit">Crit</span>
+            <span className="sw warn">Warn</span>
+            <span className="sw succ">OK</span>
+          </div>
+        </div>
+        <div className="theme-pane dark">
+          <div className="pane-lbl">Dark · night shift</div>
+          <ThemeDemoChart />
+          <div className="demo-card">
+            <div className="lbl">HR · bedside cam OCR</div>
+            <div className="num">72<span className="unit"> bpm</span></div>
+          </div>
+          <div className="swatches">
+            <span className="sw brand">Brand</span>
+            <span className="sw crit">Crit</span>
+            <span className="sw warn">Warn</span>
+            <span className="sw succ">OK</span>
+          </div>
+        </div>
+      </div>
+
+      <div style={{
+        marginTop: 20,
+        display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12,
+        fontSize: 12, color: "var(--fg-2)",
+      }}>
+        <FactRow k="Duration" v="150ms" />
+        <FactRow k="Easing" v="ease-out" />
+        <FactRow k="Properties" v="background-color, color" />
+      </div>
+
+      <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
+        <button
+          type="button"
+          className="r-btn"
+          onClick={() => {
+            const r = document.documentElement;
+            const next = r.getAttribute("data-theme") === "dark" ? "light" : "dark";
+            r.setAttribute("data-theme", next);
+            try { localStorage.setItem("aida-ref-theme", next); } catch {}
+          }}
+        >
+          <Icon name="moon" size={13} />
+          Toggle whole page
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function ThemeDemoChart({ light = false }) {
+  // Same dataset rendered with theme-appropriate strokes
+  const w = 280, h = 50;
+  const data = [62, 63, 65, 64, 66, 68, 67, 70, 72, 74, 73, 72, 71, 72, 73, 74, 76, 78, 76, 75];
+  const min = 58, max = 82;
+  const step = w / (data.length - 1);
+  const pts = data.map((v, i) => [i * step, h - ((v - min) / (max - min)) * (h - 6) - 3]);
+  const d = pts.map(([x, y], i) => (i === 0 ? `M${x.toFixed(1)},${y.toFixed(1)}` : `L${x.toFixed(1)},${y.toFixed(1)}`)).join(" ");
+  const brand = light ? "#0F766E" : "#2DD4BF";
+  const crit  = light ? "#E11D48" : "#F43F5E";
+  return (
+    <svg className="chart-svg" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+      {/* grid line */}
+      <line x1="0" y1={h * 0.5} x2={w} y2={h * 0.5} stroke={light ? "#E7E5E4" : "#292524"} strokeDasharray="2 3" />
+      <path d={d} fill="none" stroke={brand} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      {/* a critical marker */}
+      <circle cx={pts[16][0]} cy={pts[16][1]} r="3" fill={crit} stroke={light ? "#fff" : "#1C1C1B"} strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+function FactRow({ k, v }) {
+  return (
+    <div style={{
+      display: "flex", flexDirection: "column", gap: 3,
+      padding: "10px 12px",
+      background: "var(--surface)",
+      border: "1px solid var(--border)",
+      borderRadius: "var(--radius-md)",
+    }}>
+      <span style={{
+        fontSize: 10, fontWeight: 600, letterSpacing: "0.08em",
+        textTransform: "uppercase", color: "var(--fg-3)",
+      }}>{k}</span>
+      <span style={{
+        fontFamily: "var(--font-mono)", fontSize: 12,
+        color: "var(--fg-1)",
+      }}>{v}</span>
+    </div>
+  );
+}
+
+// ============================================================
+// SECTION 8 — Density variations
+// ============================================================
+function DensityVariations() {
+  const densities = [
+    { id: "compact",     name: "Compact",     meta: "−1 step · tight rows" },
+    { id: "default",     name: "Default",     meta: "baseline · clinician default" },
+    { id: "comfortable", name: "Comfortable", meta: "+1 step · accessibility" },
+  ];
+
+  const alerts = [
+    { t: "07:46", sev: "crit", lbl: "Fall confirmed — left of bed" },
+    { t: "07:31", sev: "warn", lbl: "RR rising · 14 → 22 over 40 min" },
+    { t: "07:14", sev: "warn", lbl: "Patient out of bed for 1m 22s" },
+    { t: "06:58", sev: "info", lbl: "Nurse R. Okafor entered room" },
+  ];
+
+  return (
+    <section id="s8" className="ref-section">
+      <SectionHead
+        num="08"
+        tag="Preferences"
+        title="Density variations"
+        desc="A user setting in preferences. Type size shifts one step in either direction; row padding adjusts proportionally. Numerical hierarchy and tabular alignment are preserved across all three."
+      />
+
+      <div className="density-demo">
+        {densities.map((d) => (
+          <div key={d.id} className="density-row">
+            <div className="d-lbl">
+              <span className="name">{d.name}</span>
+              <span className="meta">{d.meta}</span>
+            </div>
+            <div className="d-body">
+              <div className={`d-vital ${d.id}`}>
+                <div className="head">HR</div>
+                <div className="num">72<span className="unit">bpm</span></div>
+              </div>
+              <div className={`d-list ${d.id}`}>
+                {alerts.map((a) => (
+                  <div key={a.t + a.lbl} className="d-row">
+                    <span className="t">{a.t}</span>
+                    <span className={`sev ${a.sev}`} />
+                    <span className="lbl">{a.lbl}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ============================================================
+// SECTION 9 — Accessibility highlights
+// ============================================================
+function AccessibilityHighlights() {
+  return (
+    <section id="s9" className="ref-section">
+      <SectionHead
+        num="09"
+        tag="A11y"
+        title="Accessibility highlights"
+        desc="Aida ships to clinicians who may use keyboards, screen readers, or have reduced-motion preferences set system-wide. None of these flips a 'simpler' mode — they refine the existing one."
+      />
+
+      <div className="a11y-grid">
+        <div className="a11y-card">
+          <div className="ttl">Focus rings</div>
+          <div className="desc">2px brand-teal ring at 50% opacity with 2px offset. Visible only on keyboard focus (<code style={{ fontFamily: "var(--font-mono)", fontSize: 11 }}>:focus-visible</code>).</div>
+          <div className="demo">
+            <button type="button" className="focus-btn">Acknowledge</button>
+            <input className="focus-input" placeholder="Search patients…" readOnly />
+          </div>
+        </div>
+
+        <div className="a11y-card">
+          <div className="ttl">Skip-to-content</div>
+          <div className="desc">First focusable element on every page. Appears above the top bar when tabbed, hidden otherwise.</div>
+          <div className="demo" style={{ alignItems: "center", justifyContent: "center" }}>
+            <a className="skip-link" href="#main">
+              <Icon name="arrowRight" size={12} strokeWidth={2.5} />
+              Skip to main content
+            </a>
+          </div>
+        </div>
+
+        <div className="a11y-card">
+          <div className="ttl">Contrast on severity colors</div>
+          <div className="desc">All four semantic tokens meet WCAG AAA against their tinted backgrounds in both themes.</div>
+          <div className="demo" style={{ gap: 6 }}>
+            <ContrastRow tone="crit" label="Critical · CRIT" ratio="7.2:1" />
+            <ContrastRow tone="warn" label="Warning · WARN" ratio="6.4:1" />
+            <ContrastRow tone="succ" label="Success ·  OK " ratio="6.9:1" />
+            <ContrastRow tone="info" label="Info · INFO" ratio="7.0:1" />
+          </div>
+        </div>
+
+        <div className="a11y-card">
+          <div className="ttl">Reduced motion</div>
+          <div className="desc">When <code style={{ fontFamily: "var(--font-mono)", fontSize: 11 }}>prefers-reduced-motion: reduce</code> is set, all non-essential animation is removed. Counters always animate instantly regardless.</div>
+          <div className="demo">
+            <div className="motion-list" style={{ width: "100%" }}>
+              <ReducedRow label="Live-pill pulse" defaultV="2.4s loop" reducedV="none" />
+              <ReducedRow label="Now-line pulse" defaultV="2.4s loop" reducedV="none" />
+              <ReducedRow label="Theme crossfade" defaultV="150ms ease" reducedV="0ms" />
+              <ReducedRow label="Modal entrance" defaultV="120ms ease" reducedV="0ms" />
+              <ReducedRow label="Number counters" defaultV="instant" reducedV="instant" same />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ContrastRow({ tone, label, ratio }) {
+  return (
+    <div className="contrast-row">
+      <span className={`swatch ${tone}`}>{label}</span>
+      <span className="ratio">{ratio}</span>
+      <span className="badge">AAA</span>
+    </div>
+  );
+}
+
+function ReducedRow({ label, defaultV, reducedV, same = false }) {
+  return (
+    <div className="m-row">
+      <span>{label}</span>
+      <span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+        <span className={`v ${same ? "" : "strike"}`}>{defaultV}</span>
+        <span style={{ color: "var(--fg-3)", fontFamily: "var(--font-mono)", fontSize: 11 }}>→</span>
+        <span className="v">{reducedV}</span>
+      </span>
+    </div>
+  );
+}
+
+// ============================================================
+// SECTION 10 — Mobile responsive snapshot (tablet width)
+// ============================================================
+function TabletSnapshot() {
+  const [fabOpen, setFabOpen] = useStateB(false);
+  return (
+    <section id="s10" className="ref-section">
+      <SectionHead
+        num="10"
+        tag="Responsive"
+        title="Tablet snapshot — 768px"
+        desc="A hint of how the live monitor reflows at tablet width. The right Ask Aida rail collapses into a floating action button; the vitals 2×2 grid stays; video remains dominant."
+      />
+
+      <div className="tablet-frame">
+        <div className="bar"><div className="speaker" /></div>
+        <div className="tablet-screen">
+          <div className="tablet-topbar">
+            <span style={{ color: "var(--brand)", display: "inline-flex" }}><AidaMark size={18} /></span>
+            <span className="name">Margaret Chen</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-3)" }}>
+              Bed ICU-04 · 67F
+            </span>
+            <span className="right">
+              <span style={{
+                display: "inline-flex", alignItems: "center", gap: 5,
+                fontFamily: "var(--font-mono)", fontSize: 10,
+                color: "var(--fg-1)",
+              }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--success)" }} />
+                Live
+              </span>
+              <span style={{
+                width: 22, height: 22, borderRadius: "50%",
+                background: "var(--brand)", color: "var(--fg-on-brand)",
+                display: "inline-flex", alignItems: "center", justifyContent: "center",
+                fontSize: 9, fontWeight: 600,
+              }}>RP</span>
+            </span>
+          </div>
+          <div className="tablet-content">
+            <div className="tablet-video">
+              <div className="placeholder" />
+              <div className="live">
+                <span className="rec" /> REC · CAM 1
+              </div>
+              {/* Tiny pretend overlay */}
+              <svg viewBox="0 0 480 270" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+                <rect x="240" y="120" width="120" height="50" fill="none" stroke="#2dd4bf" strokeWidth="1.2" />
+                <rect x="240" y="106" width="76" height="14" rx="2" fill="rgba(15,118,110,0.92)" />
+                <text x="246" y="116" fontFamily="JetBrains Mono, monospace" fontSize="8" fill="#f0fdfa">patient · 0.94</text>
+              </svg>
+            </div>
+            <div className="tablet-side">
+              <div className="tablet-vitals">
+                <div className="tablet-vital">
+                  <div className="h">HR</div>
+                  <div className="n">72<span className="u">bpm</span></div>
+                </div>
+                <div className="tablet-vital">
+                  <div className="h">SpO₂</div>
+                  <div className="n">96<span className="u">%</span></div>
+                </div>
+                <div className="tablet-vital">
+                  <div className="h">BP</div>
+                  <div className="n">118<span style={{ fontSize: 12, color: "var(--fg-3)", margin: "0 1px" }}>/</span>76</div>
+                </div>
+                <div className="tablet-vital">
+                  <div className="h">RR</div>
+                  <div className="n">14<span className="u">/min</span></div>
+                </div>
+              </div>
+              <div className="tablet-alerts">
+                <div className="h">Active alerts · 2</div>
+                <div className="row"><span className="dot warn" /><span>RR rising · 40m</span><span className="t">07:31</span></div>
+                <div className="row"><span className="dot warn" /><span>Out of bed · 1m 22s</span><span className="t">07:14</span></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Floating Ask Aida button */}
+          <button
+            type="button"
+            className="tablet-fab"
+            onClick={() => setFabOpen((o) => !o)}
+            aria-label="Open Ask Aida"
+          >
+            <AidaMark size={22} />
+            <span className="badge-num">3</span>
+          </button>
+
+          {fabOpen && (
+            <div style={{
+              position: "absolute",
+              bottom: 70, right: 14,
+              width: 260,
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius-lg)",
+              boxShadow: "var(--shadow-2)",
+              padding: 12,
+              fontSize: 11.5,
+              color: "var(--fg-1)",
+            }}>
+              <div style={{
+                fontSize: 10, fontWeight: 600, color: "var(--brand)",
+                marginBottom: 6,
+              }}>Aida</div>
+              <div style={{ lineHeight: 1.5 }}>
+                Patient is stable. RR has trended up over the last 40 minutes — still within normal range.
+              </div>
+              <div style={{
+                marginTop: 8, paddingTop: 8,
+                borderTop: "1px solid var(--border)",
+                fontSize: 10, color: "var(--fg-3)",
+                fontFamily: "var(--font-mono)",
+              }}>
+                Tap mark to expand
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div style={{
+        display: "flex", justifyContent: "center", gap: 16,
+        marginTop: 16,
+        fontSize: 11, color: "var(--fg-3)",
+        fontFamily: "var(--font-mono)",
+      }}>
+        <span>viewport 768 × 480 (hint)</span>
+        <span>·</span>
+        <span>video flex 1 · side rail 280px</span>
+        <span>·</span>
+        <span>FAB 48px · bottom-right</span>
+      </div>
+    </section>
+  );
+}
+
+Object.assign(window, {
+  CriticalAlerts, ThemeTransitions, DensityVariations,
+  AccessibilityHighlights, TabletSnapshot,
+});
+
+  </script>
+  <script type="text/babel" data-presets="env,react">
+/* global React, ReactDOM, AidaMark, Icon, useTheme,
+   ConnectionStates, BedStates, EmptyStates, LoadingStates, ErrorStates,
+   CriticalAlerts, ThemeTransitions, DensityVariations,
+   AccessibilityHighlights, TabletSnapshot */
+
+const { useState, useEffect, useRef } = React;
+
+const TOC = [
+  { id: "s1",  num: "01", label: "Connection states" },
+  { id: "s2",  num: "02", label: "Bed state variations" },
+  { id: "s3",  num: "03", label: "Empty states" },
+  { id: "s4",  num: "04", label: "Loading states" },
+  { id: "s5",  num: "05", label: "Error states" },
+  { id: "s6",  num: "06", label: "Critical alert handling" },
+  { id: "s7",  num: "07", label: "Theme transitions" },
+  { id: "s8",  num: "08", label: "Density variations" },
+  { id: "s9",  num: "09", label: "Accessibility highlights" },
+  { id: "s10", num: "10", label: "Tablet snapshot" },
+];
+
+function useTOCActive() {
+  const [active, setActive] = useState("s1");
+  useEffect(() => {
+    const els = TOC.map((t) => document.getElementById(t.id)).filter(Boolean);
+    if (!els.length) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]) setActive(visible[0].target.id);
+      },
+      { rootMargin: "-88px 0px -55% 0px", threshold: 0 }
+    );
+    els.forEach((el) => obs.observe(el));
+    return () => obs.disconnect();
+  }, []);
+  return active;
+}
+
+function RefTopbar({ theme, setTheme }) {
+  return (
+    <div className="ref-topbar">
+      <span className="mark"><AidaMark size={22} /></span>
+      <span className="crumbs">
+        <span className="seg">Aida</span>
+        <span className="slash">/</span>
+        <span className="seg">Design</span>
+        <span className="slash">/</span>
+        <span className="seg current">State reference</span>
+      </span>
+      <div className="right">
+        <span className="doc-pill">
+          <Icon name="layers" size={11} strokeWidth={2} />
+          Reference doc
+        </span>
+        <button
+          type="button"
+          className="icon-btn"
+          aria-label={`Switch to ${theme === "light" ? "dark" : "light"} theme`}
+          title={`Switch to ${theme === "light" ? "dark" : "light"} theme`}
+          onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+        >
+          <Icon name={theme === "light" ? "moon" : "sun"} size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TableOfContents() {
+  const active = useTOCActive();
+  return (
+    <aside className="ref-toc" aria-label="Section navigation">
+      <div className="toc-label">Sections · 10</div>
+      <nav>
+        {TOC.map((t) => (
+          <a key={t.id} href={`#${t.id}`} className={active === t.id ? "active" : ""}>
+            <span className="num">{t.num}</span>
+            <span className="lbl">{t.label}</span>
+          </a>
+        ))}
+      </nav>
+    </aside>
+  );
+}
+
+function Hero() {
+  return (
+    <header className="ref-hero">
+      <div className="eyebrow">AIDA · POLISH PASS · V1</div>
+      <h1>State reference</h1>
+      <p>
+        A single-page catalogue of the edge cases and state variations that
+        don't appear in the three primary screens. Use these specimens as the
+        visual source-of-truth when wiring production components — every empty,
+        loading, error, and critical state has a designed answer here.
+      </p>
+      <div className="hero-meta">
+        <span><strong>Target</strong> 1440px desktop</span>
+        <span><strong>Themes</strong> light, dark</span>
+        <span><strong>Sections</strong> 10</span>
+        <span><strong>Variants</strong> 40+</span>
+      </div>
+    </header>
+  );
+}
+
+function App() {
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem("aida-ref-theme") || "light"; }
+    catch { return "light"; }
+  });
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try { localStorage.setItem("aida-ref-theme", theme); } catch {}
+  }, [theme]);
+
+  return (
+    <React.Fragment>
+      <RefTopbar theme={theme} setTheme={setTheme} />
+      <div className="ref-page">
+        <TableOfContents />
+        <main id="main">
+          <Hero />
+          <ConnectionStates />
+          <BedStates />
+          <EmptyStates />
+          <LoadingStates />
+          <ErrorStates />
+          <CriticalAlerts />
+          <ThemeTransitions />
+          <DensityVariations />
+          <AccessibilityHighlights />
+          <TabletSnapshot />
+
+          <div className="ref-foot">
+            <div className="left">
+              <AidaMark size={14} />
+              <span>aida · state reference</span>
+            </div>
+            <div>v1.0 · {new Date().getFullYear()}</div>
+          </div>
+        </main>
+      </div>
+    </React.Fragment>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+
+  </script>
+</body>
+</html>

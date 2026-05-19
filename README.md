@@ -54,9 +54,9 @@ The working Python prototype from `Healther-Vision` has been preserved in `proto
 5. [Deployment](docs/DEPLOYMENT.md)
 6. [One-Bed Agent Harness and Medplum Model](docs/ONE_BED_AGENT_HARNESS_AND_MEDPLUM_MODEL.md)
 
-The one-bed HTML plan is the active build target. The broader PRD and architecture docs are still useful, but the immediate product is a single private-room remote monitoring console with live video, event detection, evidence review, VLM interpretation, and a grounded assistant.
+The active prototype target is the imported Aida mockup workflow wired to the backend: setup/video setup, one-bed live monitor, event review, state reference, live MJPEG video, review actions, and a grounded assistant API stub. The broader PRD and architecture docs remain useful, but the immediate product is a single private-room remote monitoring loop with live video, event detection, evidence review, VLM interpretation hooks, and Medplum-ready data shape.
 
-Prototype console:
+Run the prototype:
 
 ```bash
 cd prototypes/healther-vision
@@ -64,7 +64,15 @@ source .venv/bin/activate
 python -m uvicorn --app-dir src healther_vision.app:app --reload --port 8790
 ```
 
-Then open `http://localhost:8790/monitor`.
+Then open:
+
+```text
+http://localhost:8790/setup
+http://localhost:8790/video-setup
+http://localhost:8790/monitor
+http://localhost:8790/review
+http://localhost:8790/state-reference
+```
 
 ## Current Status
 

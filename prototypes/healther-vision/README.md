@@ -25,8 +25,14 @@ Open:
 
 ```text
 http://localhost:8790/docs
+http://localhost:8790/setup
+http://localhost:8790/video-setup
 http://localhost:8790/monitor
+http://localhost:8790/review
+http://localhost:8790/state-reference
 ```
+
+The app serves the imported Aida mockups from `static/mockups` and injects a small runtime bridge for video streaming, setup save/test, event review actions, and Ask Aida backend calls. The mockup source files are kept as design references; functional wiring should live in the bridge and FastAPI routes.
 
 ## Generate Synthetic Frames
 

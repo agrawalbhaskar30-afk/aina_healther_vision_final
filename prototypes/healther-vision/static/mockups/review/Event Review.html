@@ -1,0 +1,1524 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<title>Aida — Event Review</title>
+<link rel="icon" href="assets/aida-mark.svg" />
+<style id="design-tokens">
+/* =============================================================
+   Aida — Colors & Type tokens
+   Two themes (light, dark). Toggle by setting [data-theme] on the
+   root element, or by removing it and relying on prefers-color-scheme.
+   ============================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ----- Base (light is default) -------------------------------- */
+:root,
+:root[data-theme="light"] {
+  /* Surfaces */
+  --bg:              #FAFAF9;   /* stone-50    — app background */
+  --surface:         #FFFFFF;   /*              — card / panel  */
+  --surface-2:       #F5F5F4;   /* stone-100   — recessed wells */
+  --border:          #E7E5E4;   /* stone-200   — hairlines      */
+  --border-strong:   #D6D3D1;   /* stone-300   — input borders  */
+  --scrim:           rgba(0,0,0,0.4);
+
+  /* Foreground */
+  --fg-1:            #1C1917;   /* stone-900   — primary text   */
+  --fg-2:            #57534E;   /* stone-600   — secondary text */
+  --fg-3:            #A8A29E;   /* stone-400   — tertiary text  */
+  --fg-on-brand:     #FFFFFF;
+
+  /* Brand */
+  --brand:           #0F766E;   /* teal-700                     */
+  --brand-hover:     #115E59;   /* teal-800                     */
+  --brand-active:    #134E4A;   /* teal-900                     */
+  --brand-subtle:    #F0FDFA;   /* teal-50    — soft tint bg    */
+  --brand-subtle-fg: #115E59;
+  --brand-ring:      rgba(15,118,110,0.32);
+
+  /* Semantic */
+  --critical:        #E11D48;   /* rose-600  */
+  --critical-bg:     #FFF1F2;   /* rose-50   */
+  --critical-fg:     #9F1239;   /* rose-800  */
+  --warning:         #D97706;   /* amber-600 */
+  --warning-bg:      #FFFBEB;   /* amber-50  */
+  --warning-fg:      #92400E;   /* amber-800 */
+  --success:         #059669;   /* emerald-600 */
+  --success-bg:      #ECFDF5;   /* emerald-50  */
+  --success-fg:      #065F46;   /* emerald-800 */
+  --info:            #0284C7;   /* sky-600   */
+  --info-bg:         #F0F9FF;   /* sky-50    */
+  --info-fg:         #075985;   /* sky-800   */
+
+  /* Elevation */
+  --shadow-1:        0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.02);
+  --shadow-2:        0 4px 12px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+}
+
+/* ----- Dark -------------------------------------------------- */
+:root[data-theme="dark"] {
+  --bg:              #0A0A09;
+  --surface:         #1C1C1B;
+  --surface-2:       #232220;
+  --border:          #292524;   /* stone-800 */
+  --border-strong:   #44403C;   /* stone-700 */
+  --scrim:           rgba(0,0,0,0.6);
+
+  --fg-1:            #F5F5F4;   /* stone-100 */
+  --fg-2:            #A8A29E;   /* stone-400 */
+  --fg-3:            #57534E;   /* stone-600 */
+  --fg-on-brand:     #0A0A09;
+
+  --brand:           #2DD4BF;   /* teal-400 */
+  --brand-hover:     #5EEAD4;   /* teal-300 */
+  --brand-active:    #99F6E4;   /* teal-200 */
+  --brand-subtle:    rgba(45,212,191,0.10);
+  --brand-subtle-fg: #5EEAD4;
+  --brand-ring:      rgba(45,212,191,0.40);
+
+  --critical:        #F43F5E;   /* rose-500   */
+  --critical-bg:     rgba(244,63,94,0.10);
+  --critical-fg:     #FDA4AF;   /* rose-300   */
+  --warning:         #F59E0B;
+  --warning-bg:      rgba(245,158,11,0.10);
+  --warning-fg:      #FCD34D;
+  --success:         #10B981;
+  --success-bg:      rgba(16,185,129,0.10);
+  --success-fg:      #6EE7B7;
+  --info:            #0EA5E9;
+  --info-bg:         rgba(14,165,233,0.10);
+  --info-fg:         #7DD3FC;
+
+  --shadow-1:        0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.04);
+  --shadow-2:        0 4px 16px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.4);
+}
+
+/* ----- Typography -------------------------------------------- */
+:root {
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Size / weight / leading */
+  --display-size:  48px;  --display-line: 1.05;  --display-weight: 500;
+  --h1-size:       24px;  --h1-line:      1.25;  --h1-weight:      600;
+  --h2-size:       18px;  --h2-line:      1.35;  --h2-weight:      600;
+  --body-size:     14px;  --body-line:    1.5;   --body-weight:    400;
+  --small-size:    12px;  --small-line:   1.4;   --small-weight:   500;
+  --tiny-size:     11px;  --tiny-line:    1.3;   --tiny-weight:    400;
+
+  /* Spacing — 8pt grid */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-full: 9999px;
+}
+
+/* ----- Semantic element styles ------------------------------- */
+html { font-family: var(--font-sans); color: var(--fg-1); background: var(--bg); }
+body { font-size: var(--body-size); line-height: var(--body-line); }
+
+h1 { font-size: var(--h1-size); line-height: var(--h1-line); font-weight: var(--h1-weight); letter-spacing: -0.011em; color: var(--fg-1); }
+h2 { font-size: var(--h2-size); line-height: var(--h2-line); font-weight: var(--h2-weight); letter-spacing: -0.006em; color: var(--fg-1); }
+p, li { font-size: var(--body-size); line-height: var(--body-line); color: var(--fg-2); }
+small { font-size: var(--small-size); font-weight: var(--small-weight); color: var(--fg-2); }
+code, kbd, .mono { font-family: var(--font-mono); }
+
+.display {
+  font-family: var(--font-mono);
+  font-size: var(--display-size);
+  line-height: var(--display-line);
+  font-weight: var(--display-weight);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--fg-1);
+}
+
+.tabular { font-variant-numeric: tabular-nums; }
+
+.label-caps {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+
+/* Focus ring — keyboard only */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: var(--radius-md);
+}
+
+</style>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--fg-1);
+    font-family: var(--font-sans);
+    font-size: var(--body-size);
+    line-height: var(--body-line);
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font-family: inherit; cursor: pointer; }
+  textarea { font-family: inherit; }
+  a { color: inherit; text-decoration: none; }
+  ::selection { background: var(--brand-subtle); color: var(--brand-subtle-fg); }
+
+  /* Hairline utility — used a lot */
+  .hairline { background: var(--border); }
+
+  /* Buttons (mirrors the design system preview) */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 6px; height: 32px; padding: 0 12px;
+    border-radius: var(--radius-md);
+    font-weight: 500; font-size: 13px;
+    border: 1px solid transparent; background: transparent;
+    color: var(--fg-1);
+    transition: background 80ms ease-out, color 80ms ease-out, border-color 80ms ease-out;
+  }
+  .btn:hover { background: var(--surface-2); }
+  .btn.sm { height: 28px; padding: 0 10px; font-size: 12px; }
+  .btn.primary { background: var(--brand); color: var(--fg-on-brand); border-color: var(--brand); }
+  .btn.primary:hover { background: var(--brand-hover); border-color: var(--brand-hover); }
+  .btn.secondary { background: var(--surface); border-color: var(--border-strong); }
+  .btn.secondary:hover { background: var(--surface-2); }
+  .btn.tertiary { color: var(--fg-2); }
+  .btn.tertiary:hover { color: var(--fg-1); background: var(--surface-2); }
+  .btn.icon { width: 32px; padding: 0; }
+  .btn.icon.sm { width: 28px; }
+
+  /* Pills / tags */
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .dot.success  { background: var(--success); }
+  .dot.warning  { background: var(--warning); }
+  .dot.critical { background: var(--critical); }
+  .dot.info     { background: var(--info); }
+  .dot.gray     { background: var(--fg-3); }
+  .dot.brand    { background: var(--brand); }
+
+  .tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    border-radius: var(--radius-sm); padding: 2px 8px;
+    font-size: 11px; font-weight: 500;
+  }
+  .tag.info     { background: var(--info-bg);     color: var(--info-fg); }
+  .tag.warning  { background: var(--warning-bg);  color: var(--warning-fg); }
+  .tag.critical { background: var(--critical-bg); color: var(--critical-fg); }
+  .tag.success  { background: var(--success-bg);  color: var(--success-fg); }
+  .tag.neutral  { background: var(--surface-2);   color: var(--fg-2); }
+  .tag.brand    { background: var(--brand-subtle); color: var(--brand-subtle-fg); }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    border-radius: var(--radius-full);
+    padding: 3px 10px 3px 8px;
+    font-size: 11px; font-weight: 500;
+    background: var(--surface-2); color: var(--fg-1);
+    border: 1px solid var(--border);
+  }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-1);
+  }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 0; align-items: center; border-bottom: 1px solid var(--border); }
+  .tab {
+    background: transparent; border: 0; padding: 10px 14px;
+    font-size: 13px; font-weight: 500; color: var(--fg-2);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .tab:hover { color: var(--fg-1); }
+  .tab.active { color: var(--fg-1); border-bottom-color: var(--brand); }
+
+  /* Inputs */
+  .input, .textarea {
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    padding: 8px 10px;
+    font-size: 13px;
+    color: var(--fg-1);
+    width: 100%;
+    resize: vertical;
+    font-family: inherit;
+  }
+  .textarea { min-height: 84px; line-height: 1.5; }
+  .input:focus, .textarea:focus { outline: 2px solid var(--brand); outline-offset: 1px; border-color: var(--brand); }
+
+  /* Toggle */
+  .toggle { position: relative; display: inline-block; width: 32px; height: 18px; border-radius: 9999px; background: var(--border-strong); flex-shrink: 0; cursor: pointer; transition: background 80ms; }
+  .toggle.on { background: var(--brand); }
+  .toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.2); transition: transform 100ms ease-out; }
+  .toggle.on::after { transform: translateX(14px); }
+
+  /* Mono helper */
+  .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+  /* Label caps */
+  .label-caps { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); }
+
+  /* Status pill (review status) */
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 26px; padding: 0 10px;
+    font-size: 12px; font-weight: 500;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--fg-1);
+  }
+  .status-pill.gray     { background: var(--surface-2);    color: var(--fg-2);      border-color: var(--border); }
+  .status-pill.success  { background: var(--success-bg);   color: var(--success-fg); border-color: rgba(5,150,105,0.25); }
+  .status-pill.warning  { background: var(--warning-bg);   color: var(--warning-fg); border-color: rgba(217,119,6,0.25); }
+  .status-pill.critical { background: var(--critical-bg);  color: var(--critical-fg); border-color: rgba(225,29,72,0.3); }
+  .status-pill.info     { background: var(--info-bg);      color: var(--info-fg);   border-color: rgba(2,132,199,0.25); }
+
+  /* Video placeholder — dimly-lit hospital room cue */
+  .video-stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse at 75% 20%, rgba(220,220,210,0.10) 0%, transparent 55%),
+      radial-gradient(ellipse at 30% 100%, rgba(80,90,100,0.18) 0%, transparent 60%),
+      linear-gradient(180deg, #1a1d22 0%, #0f1115 100%);
+    color: #d5d7da;
+  }
+  [data-theme="dark"] .video-stage {
+    background:
+      radial-gradient(ellipse at 75% 20%, rgba(220,220,210,0.12) 0%, transparent 55%),
+      radial-gradient(ellipse at 30% 100%, rgba(60,70,80,0.22) 0%, transparent 60%),
+      linear-gradient(180deg, #14171c 0%, #07080a 100%);
+  }
+  .video-stage::after {
+    /* faint scanline / softness, no glow */
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.35) 100%);
+    pointer-events: none;
+  }
+  .video-stage .room-glyph {
+    position: absolute; inset: 0;
+    display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: 24px;
+    color: rgba(255,255,255,0.18);
+  }
+  .video-stage .corner-tl, .video-stage .corner-br {
+    position: absolute; padding: 12px 14px; font-family: var(--font-mono);
+    font-size: 11px; letter-spacing: 0.06em; color: rgba(255,255,255,0.7);
+  }
+  .video-stage .corner-tl { top: 0; left: 0; }
+  .video-stage .corner-br { bottom: 0; right: 0; color: rgba(255,255,255,0.55); }
+  .video-stage .rec {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(0,0,0,0.4); border-radius: 4px; padding: 3px 8px;
+  }
+  .video-stage .rec .rec-dot { width: 8px; height: 8px; border-radius: 50%; background: #E11D48; }
+
+  /* Scrubber */
+  .scrubber {
+    position: relative;
+    width: 100%;
+    height: 56px;
+    padding-top: 22px;
+  }
+  .scrubber .track {
+    position: relative; height: 6px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+  }
+  .scrubber .played {
+    position: absolute; top: 0; bottom: 0; left: 0; width: 50%;
+    background: var(--brand-subtle);
+    border-right: 1px solid var(--brand);
+  }
+  .scrubber .event-line {
+    position: absolute; top: -8px; bottom: -8px; left: 50%;
+    width: 2px; background: var(--critical); transform: translateX(-1px);
+    border-radius: 1px;
+  }
+  .scrubber .event-flag {
+    position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
+    font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    color: var(--critical);
+    background: var(--critical-bg);
+    border-radius: 3px; padding: 1px 5px;
+    white-space: nowrap;
+  }
+  .scrubber .head {
+    position: absolute; top: -4px; left: 50%; transform: translateX(-50%);
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--surface); border: 2px solid var(--brand);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  }
+  .scrubber .tick {
+    position: absolute; top: -4px; width: 1px; height: 14px;
+    background: var(--border-strong);
+  }
+  .scrubber .tick-label {
+    position: absolute; top: 16px;
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--fg-3);
+    transform: translateX(-50%);
+  }
+
+  /* Detection trace */
+  .trace {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--fg-1);
+    overflow-x: auto;
+  }
+  .trace .ts { color: var(--fg-3); }
+  .trace .ok { color: var(--success-fg); }
+  .trace .warn { color: var(--warning-fg); }
+  .trace .crit { color: var(--critical-fg); font-weight: 600; }
+  .trace .meta { color: var(--fg-2); }
+  .trace .step { white-space: pre-wrap; }
+  [data-theme="dark"] .trace .ok   { color: var(--success); }
+  [data-theme="dark"] .trace .warn { color: var(--warning); }
+  [data-theme="dark"] .trace .crit { color: var(--critical); }
+
+  /* Review action grid */
+  .action-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .action-btn {
+    display: flex; flex-direction: column;
+    align-items: flex-start; justify-content: flex-start;
+    gap: 4px;
+    min-height: 78px;
+    padding: 10px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    text-align: left;
+    color: var(--fg-1);
+    transition: background 80ms, border-color 80ms, color 80ms;
+  }
+  .action-btn:hover { background: var(--surface-2); border-color: var(--border-strong); }
+  .action-btn .ic { color: var(--fg-2); }
+  .action-btn .nm { font-size: 13px; font-weight: 600; }
+  .action-btn .ds { font-size: 11px; color: var(--fg-2); line-height: 1.35; }
+  .action-btn[data-tone="success"]  .ic { color: var(--success); }
+  .action-btn[data-tone="warning"]  .ic { color: var(--warning); }
+  .action-btn[data-tone="critical"] .ic { color: var(--critical); }
+  .action-btn[data-tone="brand"]    .ic { color: var(--brand); }
+  .action-btn[data-tone="gray"]     .ic { color: var(--fg-2); }
+  .action-btn.active {
+    background: var(--brand-subtle);
+    border-color: var(--brand);
+  }
+  .action-btn.active .ic { color: var(--brand); }
+  .action-btn.active .nm { color: var(--brand-subtle-fg); }
+
+  /* Citation chip */
+  .cite-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--fg-2); background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 9999px; padding: 3px 9px;
+  }
+
+  /* Confidence bar */
+  .conf-track { height: 4px; background: var(--surface-2); border-radius: 2px; overflow: hidden; }
+  .conf-fill  { height: 100%; background: var(--brand); border-radius: 2px; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 10px;
+    background: var(--fg-1); color: var(--bg);
+    padding: 10px 14px; border-radius: var(--radius-md);
+    font-size: 13px; font-weight: 500;
+    box-shadow: var(--shadow-2);
+    z-index: 50;
+    animation: toast-in 140ms ease-out;
+  }
+  .toast .meta { color: rgba(255,255,255,0.6); font-weight: 400; font-size: 12px; }
+  [data-theme="dark"] .toast .meta { color: rgba(0,0,0,0.5); }
+  @keyframes toast-in {
+    from { opacity: 0; transform: translate(-50%, 6px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
+  }
+
+  /* Section header */
+  .sec-h {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--fg-3);
+  }
+
+  /* Context list */
+  .ctx-row {
+    display: grid;
+    grid-template-columns: 56px 14px 1fr auto;
+    align-items: center; gap: 10px;
+    padding: 8px 4px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background 80ms;
+  }
+  .ctx-row:hover { background: var(--surface-2); }
+  .ctx-row.current {
+    background: var(--critical-bg);
+    border-color: rgba(225,29,72,0.22);
+    cursor: default;
+  }
+  [data-theme="dark"] .ctx-row.current { background: rgba(244,63,94,0.08); }
+  .ctx-row.current:hover { background: var(--critical-bg); }
+  .ctx-row .t  { font-family: var(--font-mono); font-size: 12px; color: var(--fg-1); }
+  .ctx-row .o  { font-family: var(--font-mono); font-size: 10px; color: var(--fg-3); }
+  .ctx-row .lbl { font-size: 13px; color: var(--fg-1); }
+  .ctx-row.current .lbl { color: var(--critical-fg); font-weight: 600; }
+
+  /* Top bar */
+  .topbar {
+    height: 48px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .topbar .crumb {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--fg-2);
+  }
+  .topbar .crumb .sep { color: var(--fg-3); }
+
+  /* Event header strip */
+  .event-strip {
+    display: grid;
+    grid-template-columns: 4px 1fr auto;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .event-strip .stripe { background: var(--critical); }
+  .event-strip .body { padding: 18px 24px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .event-strip .right { padding: 18px 24px; display: flex; align-items: center; gap: 12px; }
+
+  /* Two-column layout */
+  .page {
+    max-width: 1440px;
+    margin: 0 auto;
+  }
+  .columns {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 440px;
+    gap: 24px;
+    padding: 24px;
+    align-items: start;
+  }
+
+  /* Right rail sticky-ish (just static; one screen, no scroll-coupling) */
+  .rail { display: flex; flex-direction: column; gap: 16px; }
+
+  /* Misc text helpers */
+  .fg-1 { color: var(--fg-1); }
+  .fg-2 { color: var(--fg-2); }
+  .fg-3 { color: var(--fg-3); }
+  .small { font-size: 12px; }
+  .tiny  { font-size: 11px; }
+  .nowrap { white-space: nowrap; }
+
+  /* Subtle pulse for severity dot in header */
+  @keyframes soft-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(225,29,72,0); }
+    50%      { box-shadow: 0 0 0 4px rgba(225,29,72,0.18); }
+  }
+  .dot-pulse { animation: soft-pulse 2200ms ease-in-out infinite; }
+
+  /* Vitals chart */
+  .legend {
+    display: flex; gap: 14px; align-items: center;
+    margin-top: 8px;
+    font-size: 12px; color: var(--fg-2);
+  }
+  .legend .swatch {
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .legend .swatch::before {
+    content: ""; width: 10px; height: 2px; border-radius: 1px; display: inline-block;
+  }
+  .legend .hr::before    { background: #E11D48; }
+  .legend .spo2::before  { background: var(--brand); }
+  .legend .rr::before    { background: #0284C7; }
+  [data-theme="dark"] .legend .hr::before    { background: #F43F5E; }
+  [data-theme="dark"] .legend .rr::before    { background: #0EA5E9; }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel" data-from="icons.jsx">
+// Lucide-style icons rendered inline. 1.5px stroke, currentColor.
+// Centralized so the whole app stays consistent.
+
+const Icon = ({ d, size = 16, children, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...props}
+  >
+    {children}
+  </svg>
+);
+
+const IArrowLeft   = (p) => <Icon {...p}><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></Icon>;
+const ISun         = (p) => <Icon {...p}><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></Icon>;
+const IMoon        = (p) => <Icon {...p}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></Icon>;
+const IPlay        = (p) => <Icon {...p}><path d="m6 4 14 8-14 8z" fill="currentColor"/></Icon>;
+const IPause       = (p) => <Icon {...p}><rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor"/><rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor"/></Icon>;
+const ISkipBack    = (p) => <Icon {...p}><path d="M19 20 9 12l10-8z" fill="currentColor"/><path d="M5 19V5"/></Icon>;
+const ISkipFwd     = (p) => <Icon {...p}><path d="m5 4 10 8-10 8z" fill="currentColor"/><path d="M19 5v14"/></Icon>;
+const IDownload    = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></Icon>;
+const IVideo       = (p) => <Icon {...p}><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4z"/></Icon>;
+const IImage       = (p) => <Icon {...p}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.5-3.5L9 21"/></Icon>;
+const IActivity    = (p) => <Icon {...p}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></Icon>;
+const ITerminal    = (p) => <Icon {...p}><path d="m4 17 6-6-6-6"/><path d="M12 19h8"/></Icon>;
+const ICheck       = (p) => <Icon {...p}><path d="M20 6 9 17l-5-5"/></Icon>;
+const IX           = (p) => <Icon {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></Icon>;
+const IHelpCircle  = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></Icon>;
+const IChevronsUp  = (p) => <Icon {...p}><path d="m17 11-5-5-5 5"/><path d="m17 18-5-5-5 5"/></Icon>;
+const IFilePlus    = (p) => <Icon {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="M9 15h6"/></Icon>;
+const IEye         = (p) => <Icon {...p}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></Icon>;
+const ISave        = (p) => <Icon {...p}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></Icon>;
+const ITrendDown   = (p) => <Icon {...p}><path d="m22 17-8.5-8.5-5 5L2 7"/><path d="M16 17h6v-6"/></Icon>;
+const ICamera      = (p) => <Icon {...p}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></Icon>;
+const IUserMinus   = (p) => <Icon {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11h-6"/></Icon>;
+const IClock       = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></Icon>;
+const IInfo        = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></Icon>;
+const ICheckCircle = (p) => <Icon {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></Icon>;
+const IAlertOctagon= (p) => <Icon {...p}><path d="M7.86 2h8.28L22 7.86v8.28L16.14 22H7.86L2 16.14V7.86z"/><path d="M12 8v4"/><path d="M12 16h.01"/></Icon>;
+const IAlertTri    = (p) => <Icon {...p}><path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></Icon>;
+const IPaperclip   = (p) => <Icon {...p}><path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></Icon>;
+const ICopy        = (p) => <Icon {...p}><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></Icon>;
+const IChevronRight= (p) => <Icon {...p}><path d="m9 18 6-6-6-6"/></Icon>;
+const IExpand      = (p) => <Icon {...p}><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></Icon>;
+
+Object.assign(window, {
+  Icon,
+  IArrowLeft, ISun, IMoon, IPlay, IPause, ISkipBack, ISkipFwd, IDownload,
+  IVideo, IImage, IActivity, ITerminal,
+  ICheck, IX, IHelpCircle, IChevronsUp, IFilePlus, IEye, ISave,
+  ITrendDown, ICamera, IUserMinus, IClock, IInfo, ICheckCircle,
+  IAlertOctagon, IAlertTri, IPaperclip, ICopy, IChevronRight, IExpand,
+});
+
+</script>
+  <script type="text/babel" data-from="event-data.jsx">
+// Mock event payload + helpers.
+
+const EVENT = {
+  id: "E-2847",
+  type: "VITALS_OUT_OF_RANGE",
+  label: "SpO\u2082 trending down",
+  severity: "critical",
+  patient: { name: "George Vattoli", bed: "ICU-2", mrn: "5821974", admission: "Post-op AAA repair d3" },
+  firedAt: "07:14:23",
+  firedAtFull: "07:14:23 AM",
+  firedAgo: "23m ago",
+  source: "Bedside Cam 1 · Monitor OCR",
+  clipMeta: "Auto-saved evidence clip · 1080p · captured from Bedside Cam 1",
+  reviewStatus: "Unreviewed",
+  interpretation: {
+    paragraphs: [
+      "SpO\u2082 dropped from 99% to 94% over the last 30 minutes — a 5-point decline that exceeds the warning threshold.",
+      "Patient is in bed and appears to be resting; the VLM scene check at 07:14:25 noted no visible signs of acute distress.",
+      "However, absence of staff for 2h 14m combined with this decline warrants attention. Possible considerations: positional desaturation, oxygen interruption, or early respiratory compromise. Recommend in-person assessment.",
+    ],
+    confidence: 0.6,
+    confidenceLabel: "Moderate",
+    citations: [
+      { icon: "trend", label: "SpO\u2082 trend 06:44\u201307:14" },
+      { icon: "camera", label: "VLM 07:14:25" },
+      { icon: "user",   label: "Staff absence 2h 14m" },
+    ],
+  },
+  contextEvents: [
+    { time: "07:08", offset: "\u22126m", label: "Position change",          severity: "info" },
+    { time: "07:14", offset: "0",       label: "SpO\u2082 trending down",   severity: "critical", isCurrent: true },
+    { time: "07:18", offset: "+4m",     label: "Aida assessment generated", severity: "info" },
+    { time: "07:21", offset: "+7m",     label: "Nurse paged",               severity: "info" },
+  ],
+  notes: [
+    {
+      author: "Dr. Mehta",
+      time: "07:25",
+      text:
+        "Visited bedside, patient stable, no intervention needed. SpO\u2082 recovered to 97% after repositioning. Likely positional desat.",
+    },
+  ],
+  trace: [
+    { t: "07:14:13", kind: "ok",   text: "SpO\u2082 reading: 99% (within range)" },
+    { t: "07:14:23", kind: "warn", text: "SpO\u2082 reading: 94% (within range, but trend detected)" },
+    { t: "07:14:23", kind: "warn", text: "Rolling 30-min trend: \u22125% (threshold: \u22123%)" },
+    { t: "07:14:23", kind: "crit", text: "Triggering VITALS_OUT_OF_RANGE \u2014 slope criterion met" },
+    { t: "07:14:23", kind: "crit", text: "Severity: Critical (drop > 4% within 30min)" },
+    { t: "07:14:23", kind: "meta", text: "VLM scene check: requested" },
+    { t: "07:14:25", kind: "meta", text: "VLM response: \u201Cpatient appears restful, no visible distress, no staff present\u201D" },
+    { t: "07:14:25", kind: "meta", text: "Event published to bus" },
+    { t: "07:14:25", kind: "meta", text: "Alert routed to: assigned nurse (Bed ICU-2), on-call physician" },
+  ],
+};
+
+// Vitals window: 10 minutes, every 10s. Index 0 = -5min, index 60 = event, index 60 = mid.
+// We'll generate deterministic series.
+function genVitals() {
+  const points = 61; // 10 min @ 10s = 60 intervals + 1 endpoint
+  const out = { hr: [], spo2: [], rr: [], times: [] };
+  // Time axis: -5:00 to +5:00 relative to event, label every minute
+  for (let i = 0; i < points; i++) {
+    const tSec = -300 + i * 10; // -300 .. +300
+    out.times.push(tSec);
+
+    // HR: drifts 72-78 slightly, tiny rise after event
+    const hrBase = 73 + Math.sin(i * 0.18) * 1.2;
+    const hrPost = tSec > 0 ? 1.1 * (tSec / 300) : 0;
+    out.hr.push(+(hrBase + hrPost + (i % 7 === 0 ? 0.4 : 0)).toFixed(1));
+
+    // SpO2: starts 99, falls roughly linearly to 94 by the event, holds, slow recover after
+    let sp;
+    if (tSec <= 0) {
+      const f = (tSec + 300) / 300; // 0 at -5min, 1 at event
+      sp = 99 - 5 * f;
+    } else {
+      // hold at 94 then climb back
+      const f = tSec / 300; // 0..1 over +5min
+      sp = 94 + 1.6 * f;
+    }
+    sp += Math.sin(i * 0.55) * 0.15;
+    out.spo2.push(+sp.toFixed(1));
+
+    // RR: 17-19
+    out.rr.push(+(18 + Math.sin(i * 0.34) * 0.7).toFixed(1));
+  }
+  return out;
+}
+const VITALS = genVitals();
+
+Object.assign(window, { EVENT, VITALS });
+
+</script>
+  <script type="text/babel" data-from="evidence.jsx">
+// Left column — evidence tabs: Video clip, Still frame, Vitals trend, Detection trace.
+
+const { useState, useMemo } = React;
+
+// --- Video tab -------------------------------------------------
+
+function VideoClip() {
+  const [playing, setPlaying] = useState(false);
+  const [speed, setSpeed] = useState(1);
+
+  return (
+    <div>
+      <div className="video-stage">
+        <div className="corner-tl">
+          <span className="rec">
+            <span className="rec-dot"></span>
+            <span>EVIDENCE CLIP</span>
+          </span>
+        </div>
+        <div className="corner-br">
+          <span>Bedside Cam 1 · ICU-2 · 1080p</span>
+        </div>
+        {/* Faint room composition — a suggestion of a bed, no detail */}
+        <div className="room-glyph">
+          <svg width="62%" height="46%" viewBox="0 0 600 240" preserveAspectRatio="xMidYEnd meet" aria-hidden="true">
+            {/* horizon line */}
+            <line x1="0" y1="180" x2="600" y2="180" stroke="rgba(255,255,255,0.10)" strokeWidth="1"/>
+            {/* bed silhouette */}
+            <rect x="120" y="150" width="360" height="14" rx="3" fill="rgba(255,255,255,0.07)"/>
+            <rect x="120" y="164" width="360" height="32" rx="4" fill="rgba(255,255,255,0.05)"/>
+            <rect x="130" y="124" width="80"  height="30" rx="6" fill="rgba(255,255,255,0.08)"/>
+            {/* pole + monitor at side */}
+            <line x1="500" y1="80" x2="500" y2="196" stroke="rgba(255,255,255,0.12)" strokeWidth="1"/>
+            <rect x="478" y="84" width="44" height="30" rx="3" fill="rgba(255,255,255,0.10)"/>
+          </svg>
+        </div>
+      </div>
+
+      {/* Scrubber */}
+      <Scrubber />
+
+      {/* Playback controls */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <button className="btn tertiary icon sm" aria-label="Previous frame"><ISkipBack size={14}/></button>
+          <button
+            className="btn primary sm"
+            onClick={() => setPlaying((p) => !p)}
+            style={{ width: 32, height: 32, padding: 0 }}
+            aria-label={playing ? "Pause" : "Play"}
+          >
+            {playing ? <IPause size={14}/> : <IPlay size={14}/>}
+          </button>
+          <button className="btn tertiary icon sm" aria-label="Next frame"><ISkipFwd size={14}/></button>
+
+          <span style={{ width: 1, height: 18, background: "var(--border)", margin: "0 6px" }}></span>
+
+          <div style={{ display: "inline-flex", border: "1px solid var(--border-strong)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
+            {[0.5, 1, 2].map((s) => (
+              <button
+                key={s}
+                onClick={() => setSpeed(s)}
+                className="mono"
+                style={{
+                  height: 26,
+                  padding: "0 9px",
+                  fontSize: 11,
+                  fontWeight: 500,
+                  background: speed === s ? "var(--surface-2)" : "var(--surface)",
+                  color: speed === s ? "var(--fg-1)" : "var(--fg-2)",
+                  border: 0,
+                  borderRight: s !== 2 ? "1px solid var(--border-strong)" : "0",
+                  cursor: "pointer",
+                }}
+              >
+                {s}×
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button className="btn secondary sm">
+          <IDownload size={13}/>
+          Download clip
+        </button>
+      </div>
+
+      <div className="small fg-3" style={{ marginTop: 10 }}>
+        {EVENT.clipMeta}
+      </div>
+    </div>
+  );
+}
+
+function Scrubber() {
+  const ticks = [
+    { label: "−30s", pct: 0   },
+    { label: "−20s", pct: 1/6 },
+    { label: "−10s", pct: 2/6 },
+    { label: "Event", pct: 0.5, hide: true },
+    { label: "+10s", pct: 4/6 },
+    { label: "+20s", pct: 5/6 },
+    { label: "+30s", pct: 1   },
+  ];
+  return (
+    <div className="scrubber">
+      <div className="track">
+        <div className="played"></div>
+        {ticks.filter(t => !t.hide).map((t) => (
+          <span key={t.label} className="tick" style={{ left: `${t.pct * 100}%` }}></span>
+        ))}
+        <span className="event-flag">07:14:23 · EVENT</span>
+        <span className="event-line"></span>
+        <span className="head"></span>
+        {ticks.filter(t => !t.hide).map((t) => (
+          <span key={t.label} className="tick-label" style={{ left: `${t.pct * 100}%` }}>{t.label}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// --- Still frame tab ------------------------------------------
+
+function StillFrame() {
+  return (
+    <div>
+      <div className="video-stage">
+        <div className="corner-tl">
+          <span style={{ background: "rgba(0,0,0,0.4)", borderRadius: 4, padding: "3px 8px" }}>
+            STILL · FRAME @ EVENT
+          </span>
+        </div>
+        <div className="corner-br">
+          <span className="mono">07:14:23.847</span>
+        </div>
+        <div className="room-glyph">
+          <svg width="62%" height="46%" viewBox="0 0 600 240" preserveAspectRatio="xMidYEnd meet" aria-hidden="true">
+            <line x1="0" y1="180" x2="600" y2="180" stroke="rgba(255,255,255,0.10)" strokeWidth="1"/>
+            <rect x="120" y="150" width="360" height="14" rx="3" fill="rgba(255,255,255,0.08)"/>
+            <rect x="120" y="164" width="360" height="32" rx="4" fill="rgba(255,255,255,0.06)"/>
+            <rect x="130" y="124" width="80"  height="30" rx="6" fill="rgba(255,255,255,0.09)"/>
+            <line x1="500" y1="80" x2="500" y2="196" stroke="rgba(255,255,255,0.12)" strokeWidth="1"/>
+            <rect x="478" y="84" width="44" height="30" rx="3" fill="rgba(255,255,255,0.10)"/>
+          </svg>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>
+        <div className="mono small fg-2">Frame timestamp · 07:14:23.847 AM</div>
+        <button className="btn secondary sm"><ISave size={13}/>Save image</button>
+      </div>
+
+      <div className="small fg-3" style={{ marginTop: 10 }}>
+        Sampled at event publication · Source: Bedside Cam 1
+      </div>
+    </div>
+  );
+}
+
+// --- Vitals trend tab -----------------------------------------
+
+function VitalsTrend() {
+  const w = 760, h = 280;
+  const padL = 44, padR = 16, padT = 16, padB = 32;
+  const innerW = w - padL - padR;
+  const innerH = h - padT - padB;
+
+  // y ranges
+  // We display all three lines on one chart but each has its own visual scale.
+  // Use one shared %-axis for SpO2 (90–100), separate small ticks for HR/RR text labels in legend.
+  // To keep it readable, we'll just plot SpO2 on real % scale, and normalize HR and RR into
+  // a compatible visual band (sub-label-only ranges).
+  const xs = VITALS.times;
+  const xAt = (t) => padL + ((t + 300) / 600) * innerW;
+
+  // SpO2 axis: 90..100
+  const spo2Min = 90, spo2Max = 100;
+  const spo2Y = (v) => padT + (1 - (v - spo2Min) / (spo2Max - spo2Min)) * innerH;
+  // HR axis: 60..90 mapped over the same chart for layering
+  const hrMin = 60, hrMax = 90;
+  const hrY = (v) => padT + (1 - (v - hrMin) / (hrMax - hrMin)) * innerH;
+  // RR axis: 12..24
+  const rrMin = 12, rrMax = 24;
+  const rrY = (v) => padT + (1 - (v - rrMin) / (rrMax - rrMin)) * innerH;
+
+  const path = (vals, yFn) =>
+    vals.map((v, i) => `${i === 0 ? "M" : "L"}${xAt(xs[i]).toFixed(1)},${yFn(v).toFixed(1)}`).join(" ");
+
+  const yTicks = [90, 92, 94, 96, 98, 100];
+
+  const [hover, setHover] = useState(null); // { x, idx }
+  const onMove = (e) => {
+    const svg = e.currentTarget;
+    const rect = svg.getBoundingClientRect();
+    const px = (e.clientX - rect.left) * (w / rect.width);
+    if (px < padL || px > w - padR) { setHover(null); return; }
+    const tSec = ((px - padL) / innerW) * 600 - 300;
+    const idx = Math.max(0, Math.min(xs.length - 1, Math.round((tSec + 300) / 10)));
+    setHover({ idx });
+  };
+
+  const minuteMarks = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
+
+  const colors = {
+    hr:   getComputedStyle(document.documentElement).getPropertyValue("--critical").trim() || "#E11D48",
+    spo2: getComputedStyle(document.documentElement).getPropertyValue("--brand").trim()    || "#0F766E",
+    rr:   getComputedStyle(document.documentElement).getPropertyValue("--info").trim()     || "#0284C7",
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+        <div>
+          <div className="label-caps">Vitals · 10-min window</div>
+          <div className="small fg-2" style={{ marginTop: 4 }}>
+            06:09:23 – 07:19:23 · Event marker at 07:14:23
+          </div>
+        </div>
+        <div className="mono small fg-3">Δt = 10s</div>
+      </div>
+
+      <div style={{ width: "100%", overflow: "hidden", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", background: "var(--surface)" }}>
+        <svg
+          viewBox={`0 0 ${w} ${h}`}
+          width="100%"
+          height={h}
+          onMouseMove={onMove}
+          onMouseLeave={() => setHover(null)}
+          style={{ display: "block" }}
+        >
+          {/* Y grid + labels (SpO2 axis) */}
+          {yTicks.map((v) => (
+            <g key={v}>
+              <line x1={padL} x2={w - padR} y1={spo2Y(v)} y2={spo2Y(v)} stroke="var(--border)" strokeWidth="1" strokeDasharray={v === 96 ? "0" : "0"}/>
+              <text x={padL - 8} y={spo2Y(v) + 3} textAnchor="end" fontSize="10" fontFamily="var(--font-mono)" fill="var(--fg-3)">{v}</text>
+            </g>
+          ))}
+          {/* X ticks */}
+          {minuteMarks.map((m) => (
+            <g key={m}>
+              <line x1={xAt(m * 60)} x2={xAt(m * 60)} y1={padT} y2={h - padB} stroke="var(--border)" strokeWidth="1" strokeDasharray={m === 0 ? "0" : "1 4"}/>
+              <text x={xAt(m * 60)} y={h - padB + 14} textAnchor="middle" fontSize="10" fontFamily="var(--font-mono)" fill="var(--fg-3)">
+                {m === 0 ? "EVT" : (m > 0 ? `+${m}m` : `${m}m`)}
+              </text>
+            </g>
+          ))}
+
+          {/* Event vertical (red dashed) */}
+          <line
+            x1={xAt(0)} x2={xAt(0)}
+            y1={padT - 2} y2={h - padB}
+            stroke={colors.hr} strokeWidth="1.25" strokeDasharray="4 4"
+          />
+
+          {/* Threshold band (94 critical) - very faint */}
+          <rect x={padL} y={spo2Y(94)} width={innerW} height={spo2Y(90) - spo2Y(94)} fill={colors.hr} opacity="0.06"/>
+
+          {/* Lines */}
+          <path d={path(VITALS.hr, hrY)}     fill="none" stroke={colors.hr}   strokeWidth="1.4" opacity="0.55"/>
+          <path d={path(VITALS.rr, rrY)}     fill="none" stroke={colors.rr}   strokeWidth="1.4" opacity="0.55"/>
+          <path d={path(VITALS.spo2, spo2Y)} fill="none" stroke={colors.spo2} strokeWidth="1.8"/>
+
+          {/* Hover */}
+          {hover && (() => {
+            const i = hover.idx;
+            const t = xs[i];
+            const x = xAt(t);
+            return (
+              <g>
+                <line x1={x} x2={x} y1={padT} y2={h - padB} stroke="var(--fg-3)" strokeWidth="1" />
+                <circle cx={x} cy={spo2Y(VITALS.spo2[i])} r="3" fill={colors.spo2} stroke="var(--surface)" strokeWidth="1.5"/>
+                <circle cx={x} cy={hrY(VITALS.hr[i])}     r="2.5" fill={colors.hr}   stroke="var(--surface)" strokeWidth="1.5"/>
+                <circle cx={x} cy={rrY(VITALS.rr[i])}     r="2.5" fill={colors.rr}   stroke="var(--surface)" strokeWidth="1.5"/>
+              </g>
+            );
+          })()}
+        </svg>
+      </div>
+
+      {/* Legend + readout */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginTop: 10 }}>
+        <div className="legend">
+          <span className="swatch hr">HR <span className="mono fg-2" style={{ marginLeft: 4 }}>{hover ? VITALS.hr[hover.idx].toFixed(0) : VITALS.hr[30].toFixed(0)} bpm</span></span>
+          <span className="swatch spo2">SpO₂ <span className="mono fg-2" style={{ marginLeft: 4 }}>{hover ? VITALS.spo2[hover.idx].toFixed(0) : 94} %</span></span>
+          <span className="swatch rr">RR <span className="mono fg-2" style={{ marginLeft: 4 }}>{hover ? VITALS.rr[hover.idx].toFixed(0) : 18} /min</span></span>
+        </div>
+        <div className="mono tiny fg-3">
+          {hover ? formatRel(xs[hover.idx]) : "Hover for readings"}
+        </div>
+      </div>
+
+      <div className="small fg-3" style={{ marginTop: 12 }}>
+        Source: Monitor OCR · Readings every 10s
+      </div>
+    </div>
+  );
+}
+
+function formatRel(secs) {
+  const abs = Math.abs(secs);
+  const m = Math.floor(abs / 60);
+  const s = abs % 60;
+  const sign = secs < 0 ? "−" : (secs > 0 ? "+" : "");
+  return `t = ${sign}${m}m ${String(s).padStart(2, "0")}s · ${secs === 0 ? "event" : ""}`.trim();
+}
+
+// --- Detection trace tab --------------------------------------
+
+function DetectionTrace() {
+  return (
+    <div>
+      <div className="small fg-2" style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 8 }}>
+        <ITerminal size={14}/>
+        <span>Detection trace · for debugging and audit. Helpful for understanding why this event fired.</span>
+      </div>
+
+      <div className="trace">
+        {EVENT.trace.map((row, i) => (
+          <div key={i} className="step">
+            <span className="ts">[{row.t}] </span>
+            <span className={row.kind}>{row.text}</span>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, gap: 8 }}>
+        <div className="tiny fg-3">Rule: <span className="mono">vitals.slope.spo2 &lt; −3% / 30m</span> · Engine v4.18.2</div>
+        <button className="btn tertiary sm"><ICopy size={13}/>Copy trace</button>
+      </div>
+    </div>
+  );
+}
+
+// --- Tab shell -------------------------------------------------
+
+function EvidencePanel() {
+  const [tab, setTab] = useState("video");
+  const tabs = [
+    { id: "video",  label: "Video clip",         icon: IVideo,    sub: "30s before / 30s after" },
+    { id: "still",  label: "Still frame",        icon: IImage,    sub: "Frame at event" },
+    { id: "vitals", label: "Vitals trend",       icon: IActivity, sub: "10-min window" },
+    { id: "trace",  label: "Detection trace",    icon: ITerminal, sub: "Inference log" },
+  ];
+  const active = tabs.find(t => t.id === tab);
+
+  return (
+    <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+      <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <div className="label-caps">Evidence</div>
+          <div className="small fg-2">{active.sub}</div>
+        </div>
+        <div className="badge">
+          <IPaperclip size={12}/>
+          <span>3 sources</span>
+        </div>
+      </div>
+
+      <div className="tabs" style={{ paddingLeft: 8, paddingRight: 8 }}>
+        {tabs.map((t) => {
+          const Ic = t.icon;
+          return (
+            <button
+              key={t.id}
+              className={"tab" + (tab === t.id ? " active" : "")}
+              onClick={() => setTab(t.id)}
+            >
+              <Ic size={14}/> {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ padding: 20 }}>
+        {tab === "video"  && <VideoClip />}
+        {tab === "still"  && <StillFrame />}
+        {tab === "vitals" && <VitalsTrend />}
+        {tab === "trace"  && <DetectionTrace />}
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { EvidencePanel });
+
+</script>
+  <script type="text/babel" data-from="rail.jsx">
+// Right column — Interpretation, surrounding context, review actions, notes.
+
+const { useState: useStateR } = React;
+
+function AidaMark({ size = 18 }) {
+  return (
+    <span
+      style={{
+        width: size + 8, height: size + 8,
+        borderRadius: 6,
+        background: "var(--surface)",
+        border: "1px solid var(--border)",
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        color: "var(--brand)",
+        flexShrink: 0,
+      }}
+    >
+      <svg width={size} height={size} viewBox="0 0 64 64" fill="none" aria-hidden="true">
+        <path
+          fill="currentColor"
+          fillRule="evenodd"
+          d="M14 0h36a14 14 0 0 1 14 14v36a14 14 0 0 1-14 14H14A14 14 0 0 1 0 50V14A14 14 0 0 1 14 0Zm-2 25a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h40a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H12Z"
+        />
+      </svg>
+    </span>
+  );
+}
+
+// --- Interpretation -------------------------------------------
+
+function Interpretation() {
+  const conf = EVENT.interpretation.confidence;
+  const citeIcon = (k) => {
+    if (k === "trend")  return <ITrendDown size={11}/>;
+    if (k === "camera") return <ICamera size={11}/>;
+    if (k === "user")   return <IUserMinus size={11}/>;
+    return <IInfo size={11}/>;
+  };
+  return (
+    <section className="card" style={{ padding: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+        <AidaMark size={16}/>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div className="label-caps" style={{ color: "var(--brand)" }}>Aida's interpretation</div>
+          <div className="tiny fg-3">Generated 07:14:28 · Model v4.18</div>
+        </div>
+        <div style={{ marginLeft: "auto" }}>
+          <span className="tag brand">AI</span>
+        </div>
+      </div>
+
+      <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--fg-1)", display: "flex", flexDirection: "column", gap: 8 }}>
+        {EVENT.interpretation.paragraphs.map((p, i) => (<p key={i} style={{ margin: 0, color: "var(--fg-1)" }}>{p}</p>))}
+      </div>
+
+      {/* Confidence */}
+      <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+          <span className="tiny fg-2" style={{ fontWeight: 500 }}>Aida confidence</span>
+          <span className="mono small fg-1">{EVENT.interpretation.confidenceLabel} · {Math.round(conf * 100)}%</span>
+        </div>
+        <div className="conf-track">
+          <div className="conf-fill" style={{ width: `${conf * 100}%` }}></div>
+        </div>
+      </div>
+
+      {/* Citations */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
+        {EVENT.interpretation.citations.map((c, i) => (
+          <span className="cite-chip" key={i}>{citeIcon(c.icon)}{c.label}</span>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// --- Surrounding context --------------------------------------
+
+function SurroundingContext() {
+  return (
+    <section className="card" style={{ padding: 16 }}>
+      <div className="sec-h" style={{ marginBottom: 8 }}>
+        <span>Events ±15 min</span>
+        <span className="mono tiny" style={{ color: "var(--fg-3)", textTransform: "none", letterSpacing: 0 }}>06:59 – 07:29</span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 4 }}>
+        {EVENT.contextEvents.map((e, i) => (
+          <div
+            key={i}
+            className={"ctx-row" + (e.isCurrent ? " current" : "")}
+            onClick={() => !e.isCurrent && console.log("[navigate to event]", e)}
+            role={e.isCurrent ? undefined : "button"}
+            tabIndex={e.isCurrent ? -1 : 0}
+          >
+            <span className="mono t">{e.time}</span>
+            <span className={"dot " + e.severity}></span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
+              <span className="lbl" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.label}</span>
+              {e.isCurrent && <span className="tiny fg-2" style={{ color: "var(--critical-fg)", opacity: 0.85 }}>This event</span>}
+            </div>
+            <span className="mono o">{e.offset}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// --- Review actions -------------------------------------------
+
+const REVIEW_ACTIONS = [
+  { id: "ack",   nm: "Acknowledge",      ds: "I've seen this",          tone: "gray",     icon: IEye,         status: { label: "Acknowledged",  tone: "info"     } },
+  { id: "tp",    nm: "True positive",    ds: "Real clinical event",     tone: "success",  icon: ICheckCircle, status: { label: "True positive", tone: "success"  } },
+  { id: "fp",    nm: "False positive",   ds: "AI was wrong",            tone: "warning",  icon: IX,           status: { label: "False positive",tone: "warning"  } },
+  { id: "unc",   nm: "Unclear",          ds: "Need more info",          tone: "gray",     icon: IHelpCircle,  status: { label: "Unclear",       tone: "gray"     } },
+  { id: "esc",   nm: "Escalate",         ds: "Send to senior on-call",  tone: "critical", icon: IChevronsUp,  status: { label: "Escalated",     tone: "critical" } },
+  { id: "note",  nm: "Create note draft",ds: "Add to chart",            tone: "brand",    icon: IFilePlus,    status: { label: "Note drafted",  tone: "info"     } },
+];
+
+function ReviewActions({ activeId, onPick }) {
+  return (
+    <section className="card" style={{ padding: 16 }}>
+      <div className="sec-h" style={{ marginBottom: 12 }}>
+        <span>Review</span>
+        <span className="tiny mono" style={{ color: "var(--fg-3)", textTransform: "none", letterSpacing: 0 }}>One action required</span>
+      </div>
+
+      <div className="action-grid">
+        {REVIEW_ACTIONS.map((a) => {
+          const Ic = a.icon;
+          const isActive = activeId === a.id;
+          return (
+            <button
+              key={a.id}
+              className={"action-btn" + (isActive ? " active" : "")}
+              data-tone={a.tone}
+              onClick={() => onPick(a)}
+            >
+              <span className="ic"><Ic size={16}/></span>
+              <span className="nm">{a.nm}</span>
+              <span className="ds">{a.ds}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="tiny fg-3" style={{ marginTop: 12, lineHeight: 1.5 }}>
+        Your review will be logged with timestamp and user ID. Aida learns from these labels over time.
+      </div>
+    </section>
+  );
+}
+
+// --- Notes section --------------------------------------------
+
+function NotesSection() {
+  const [draft, setDraft] = useStateR("");
+  const [attach, setAttach] = useStateR(true);
+  const [notes, setNotes] = useStateR(EVENT.notes);
+  const [savedFlash, setSavedFlash] = useStateR(false);
+
+  const save = () => {
+    if (!draft.trim()) return;
+    setNotes((ns) => [
+      ...ns,
+      { author: "Dr. K. Owens", time: nowHHmm(), text: draft.trim(), justAdded: true, attached: attach },
+    ]);
+    setDraft("");
+    setSavedFlash(true);
+    setTimeout(() => setSavedFlash(false), 1400);
+  };
+
+  return (
+    <section className="card" style={{ padding: 16 }}>
+      <div className="sec-h" style={{ marginBottom: 10 }}>
+        <span>Notes</span>
+        <span className="tiny mono" style={{ color: "var(--fg-3)", textTransform: "none", letterSpacing: 0 }}>{notes.length} {notes.length === 1 ? "entry" : "entries"}</span>
+      </div>
+
+      {/* Existing notes */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 12 }}>
+        {notes.map((n, i) => (
+          <div
+            key={i}
+            style={{
+              padding: "10px 12px",
+              background: "var(--surface-2)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius-md)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--fg-1)" }}>{n.author}</span>
+              <span className="mono tiny fg-3">{n.time}</span>
+              {n.attached && <span className="tag neutral" style={{ marginLeft: "auto" }}>Attached to chart</span>}
+            </div>
+            <div className="small" style={{ color: "var(--fg-2)", lineHeight: 1.55 }}>{n.text}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Draft */}
+      <textarea
+        className="textarea"
+        placeholder="Add a note about this event…"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+      />
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer", userSelect: "none" }}>
+          <span className={"toggle" + (attach ? " on" : "")} onClick={() => setAttach((v) => !v)}></span>
+          <span className="small fg-2">Attach to patient chart</span>
+        </label>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {savedFlash && <span className="small" style={{ color: "var(--success-fg)" }}>Saved</span>}
+          <button className="btn primary sm" disabled={!draft.trim()} style={{ opacity: draft.trim() ? 1 : 0.4 }} onClick={save}>
+            <ISave size={13}/>Save note
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function nowHHmm() {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+Object.assign(window, { Interpretation, SurroundingContext, ReviewActions, NotesSection, REVIEW_ACTIONS, AidaMark });
+
+</script>
+  <script type="text/babel" data-from="app.jsx">
+// App shell — top bar, event header strip, two-column layout, toast.
+
+const { useState: useStateA, useEffect: useEffectA } = React;
+
+function ThemeToggle({ theme, onToggle }) {
+  return (
+    <button className="btn tertiary icon" onClick={onToggle} aria-label="Toggle theme" title="Toggle theme">
+      {theme === "dark" ? <ISun size={14}/> : <IMoon size={14}/>}
+    </button>
+  );
+}
+
+function TopBar({ theme, setTheme }) {
+  return (
+    <div className="topbar">
+      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <button
+          className="btn tertiary"
+          style={{ paddingLeft: 6, paddingRight: 10 }}
+          onClick={() => console.log("[Back to live monitor]")}
+        >
+          <IArrowLeft size={15}/>
+          <span style={{ fontSize: 13, fontWeight: 500 }}>Back to monitor</span>
+        </button>
+        <span style={{ width: 1, height: 18, background: "var(--border)" }}></span>
+        <div className="crumb">
+          <AidaMark size={12}/>
+          <span style={{ fontWeight: 600, color: "var(--fg-1)" }}>Aida</span>
+          <span className="sep">/</span>
+          <span>Bed {EVENT.patient.bed}</span>
+          <span className="sep">/</span>
+          <span className="mono" style={{ fontSize: 12 }}>Event #{EVENT.id}</span>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div className="mono small fg-2" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <IClock size={12}/>
+          <span>Fired {EVENT.firedAtFull}</span>
+          <span className="fg-3">·</span>
+          <span className="fg-3">{EVENT.firedAgo}</span>
+        </div>
+        <span style={{ width: 1, height: 18, background: "var(--border)" }}></span>
+        <ThemeToggle theme={theme} onToggle={() => setTheme(theme === "dark" ? "light" : "dark")}/>
+      </div>
+    </div>
+  );
+}
+
+function EventHeaderStrip({ reviewStatus }) {
+  const sev = EVENT.severity;
+  return (
+    <div className="event-strip">
+      <div className="stripe" style={{ background: "var(--critical)" }}></div>
+      <div className="body">
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <span className="mono" style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", color: "var(--fg-3)" }}>
+            {EVENT.type}
+          </span>
+          <span className="fg-3" style={{ fontSize: 12 }}>·</span>
+          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600, letterSpacing: "-0.01em" }}>{EVENT.label}</h1>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 2 }}>
+          <span className="tag critical" style={{ padding: "2px 8px" }}>
+            <span className="dot critical dot-pulse" style={{ width: 6, height: 6 }}></span>
+            Critical
+          </span>
+          <span className="small fg-2" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontWeight: 600, color: "var(--fg-1)" }}>{EVENT.patient.name}</span>
+            <span className="fg-3">·</span>
+            <span>Bed {EVENT.patient.bed}</span>
+            <span className="fg-3">·</span>
+            <span className="mono">MRN {EVENT.patient.mrn}</span>
+            <span className="fg-3">·</span>
+            <span>{EVENT.patient.admission}</span>
+          </span>
+          <span className="fg-3 small">·</span>
+          <span className="mono small fg-2">Fired {EVENT.firedAt}</span>
+        </div>
+      </div>
+      <div className="right">
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+          <span className="label-caps">Review status</span>
+          <span className={`status-pill ${reviewStatus.tone}`}>
+            <span className={`dot ${reviewStatus.tone === "gray" ? "gray" : reviewStatus.tone}`}></span>
+            {reviewStatus.label}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Toast({ msg, sub }) {
+  if (!msg) return null;
+  return (
+    <div className="toast" role="status">
+      <ICheck size={14}/>
+      <span>{msg}</span>
+      {sub && <span className="meta">· {sub}</span>}
+    </div>
+  );
+}
+
+function App() {
+  const [theme, setTheme] = useStateA("light");
+  const [reviewStatus, setReviewStatus] = useStateA({ label: "Unreviewed", tone: "gray" });
+  const [toast, setToast] = useStateA(null);
+
+  useEffectA(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
+
+  const handleReview = (a) => {
+    setReviewStatus(a.status);
+    setToast({
+      msg: `Marked as ${a.nm.toLowerCase()}`,
+      sub: "Logged to audit trail",
+    });
+    console.log("[review]", a.id, a.nm);
+    clearTimeout(handleReview._t);
+    handleReview._t = setTimeout(() => setToast(null), 2400);
+  };
+
+  return (
+    <div>
+      <TopBar theme={theme} setTheme={setTheme}/>
+      <EventHeaderStrip reviewStatus={reviewStatus}/>
+
+      <div className="page">
+        <div className="columns">
+          {/* Left — evidence */}
+          <div>
+            <EvidencePanel />
+          </div>
+
+          {/* Right — interpretation, context, review, notes */}
+          <div className="rail">
+            <Interpretation />
+            <SurroundingContext />
+            <ReviewActions activeId={REVIEW_ACTIONS.find(a => a.status.label === reviewStatus.label)?.id} onPick={handleReview}/>
+            <NotesSection />
+          </div>
+        </div>
+      </div>
+
+      <Toast msg={toast?.msg} sub={toast?.sub}/>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+
+</script>
+</body>
+</html>

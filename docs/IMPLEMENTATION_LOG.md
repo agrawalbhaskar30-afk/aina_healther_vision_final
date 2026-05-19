@@ -35,3 +35,24 @@
 
 - The Cloudphysician demo screenshots look like a branded indoor PTZ/speed-dome IP camera mounted high in the room, likely rebranded OEM hardware similar to Hikvision/Dahua-style PTZ devices.
 - Exact Cloudphysician camera SKU was not identified from public material or screenshots.
+
+## 2026-05-19
+
+### User Correction
+
+- The custom frontend console was rejected.
+- The imported Aida mockups are now the source of truth for page layout and workflow.
+- Functional work should wire the mockups without redesigning them.
+
+### Implementation Notes
+
+- Removed the hand-built `monitor_console.py` frontend.
+- Imported the supplied mockups into `prototypes/healther-vision/static/mockups/`:
+  - monitor from `Aida-2`
+  - setup/video setup from `Aida 3`
+  - review from `Aida`
+  - state reference from `aidaaa`
+- FastAPI now serves the mockup pages at `/setup`, `/video-setup`, `/monitor`, `/review`, and `/state-reference`.
+- Added a runtime bridge at `/mockups/bridge.js` instead of editing the mockup source design files.
+- Wired the bridge to the existing backend MJPEG video stream, event review endpoints, setup save/test endpoints, and an Ask Aida assistant endpoint.
+- Added in-memory event, review, setup, vitals, and assistant API stubs so the frontend workflow can run before database and model integrations are added.

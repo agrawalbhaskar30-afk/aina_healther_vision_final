@@ -1,0 +1,1767 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=1440"/>
+<title>Aida — Setup · Bed ICU-2</title>
+<link rel="icon" href="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%20fill%3D%22none%22%20aria-label%3D%22Aida%22%3E%0A%20%20%0A%20%20%3Cpath%20fill%3D%22%230F766E%22%20fill-rule%3D%22evenodd%22%20d%3D%22M14%200h36a14%2014%200%200%201%2014%2014v36a14%2014%200%200%201-14%2014H14A14%2014%200%200%201%200%2050V14A14%2014%200%200%201%2014%200Zm-2%2025a2%202%200%200%200-2%202v4a2%202%200%200%200%202%202h40a2%202%200%200%200%202-2v-4a2%202%200%200%200-2-2H12Z%22%3E%3C%2Fpath%3E%0A%3C%2Fsvg%3E" type="image/svg+xml"/>
+<style>
+/* Aida — Camera / Room Setup */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root, :root[data-theme="light"] {
+  --bg:#FAFAF9; --surface:#FFFFFF; --surface-2:#F5F5F4;
+  --border:#E7E5E4; --border-strong:#D6D3D1;
+  --fg-1:#1C1917; --fg-2:#57534E; --fg-3:#A8A29E; --fg-on-brand:#FFFFFF;
+  --brand:#0F766E; --brand-hover:#115E59; --brand-active:#134E4A;
+  --brand-subtle:#F0FDFA; --brand-subtle-fg:#115E59; --brand-ring:rgba(15,118,110,0.32);
+  --critical:#E11D48; --critical-bg:#FFF1F2; --critical-fg:#9F1239;
+  --warning:#D97706;  --warning-bg:#FFFBEB;  --warning-fg:#92400E;
+  --success:#059669;  --success-bg:#ECFDF5;  --success-fg:#065F46;
+  --info:#0284C7;     --info-bg:#F0F9FF;     --info-fg:#075985;
+  --scrim:rgba(0,0,0,0.4);
+  --shadow-1:0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.02);
+  --shadow-2:0 4px 12px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+
+  /* shape accents */
+  --bed-stroke:#0F766E; --bed-fill:rgba(15,118,110,0.18);
+  --mon-stroke:#0284C7; --mon-fill:rgba(2,132,199,0.10);
+  --iv-stroke:#7C3AED;  --iv-fill:rgba(124,58,237,0.10);
+  --floor-stroke:#D97706; --floor-fill:rgba(217,119,6,0.10);
+
+  --font-sans:'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono:'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --radius-sm:4px; --radius-md:6px; --radius-lg:8px; --radius-full:9999px;
+}
+
+:root[data-theme="dark"] {
+  --bg:#0A0A09; --surface:#1C1C1B; --surface-2:#232220;
+  --border:#292524; --border-strong:#44403C;
+  --fg-1:#F5F5F4; --fg-2:#A8A29E; --fg-3:#57534E; --fg-on-brand:#0A0A09;
+  --brand:#2DD4BF; --brand-hover:#5EEAD4; --brand-active:#99F6E4;
+  --brand-subtle:rgba(45,212,191,0.10); --brand-subtle-fg:#5EEAD4; --brand-ring:rgba(45,212,191,0.40);
+  --critical:#F43F5E; --critical-bg:rgba(244,63,94,0.10); --critical-fg:#FDA4AF;
+  --warning:#F59E0B;  --warning-bg:rgba(245,158,11,0.10); --warning-fg:#FCD34D;
+  --success:#10B981;  --success-bg:rgba(16,185,129,0.10); --success-fg:#6EE7B7;
+  --info:#0EA5E9;     --info-bg:rgba(14,165,233,0.10);    --info-fg:#7DD3FC;
+  --scrim:rgba(0,0,0,0.6);
+  --shadow-1:0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.04);
+  --shadow-2:0 4px 16px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.4);
+
+  --bed-stroke:#2DD4BF; --bed-fill:rgba(45,212,191,0.18);
+  --mon-stroke:#38BDF8; --mon-fill:rgba(56,189,248,0.12);
+  --iv-stroke:#A78BFA;  --iv-fill:rgba(167,139,250,0.14);
+  --floor-stroke:#F59E0B; --floor-fill:rgba(245,158,11,0.10);
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+html { font-family: var(--font-sans); color: var(--fg-1); background: var(--bg); }
+body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  background: var(--bg);
+}
+
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.label-caps {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--fg-2);
+}
+
+/* =========== TOP BAR =========== */
+.topbar {
+  height: 48px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  display: flex; align-items: center;
+  padding: 0 20px;
+  gap: 16px;
+  position: sticky; top: 0; z-index: 10;
+}
+.topbar .left, .topbar .right { display: flex; align-items: center; gap: 14px; }
+.topbar .right { margin-left: auto; }
+.topbar .divider { width: 1px; height: 20px; background: var(--border); }
+.brand-mark { width: 20px; height: 20px; display: inline-block; }
+.crumbs {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px;
+}
+.crumbs .crumb-back {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--fg-2); text-decoration: none;
+  padding: 4px 8px; margin-left: -8px;
+  border-radius: var(--radius-sm);
+}
+.crumbs .crumb-back:hover { background: var(--surface-2); color: var(--fg-1); }
+.crumbs .sep { color: var(--fg-3); }
+.crumbs .ctx { color: var(--fg-3); }
+.crumbs .title { font-weight: 600; color: var(--fg-1); }
+.bed-id-mono { font-family: var(--font-mono); font-weight: 500; }
+
+/* =========== BUTTONS =========== */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; height: 32px; padding: 0 12px;
+  border-radius: var(--radius-md);
+  font-weight: 500; font-size: 13px;
+  border: 1px solid transparent; background: transparent;
+  color: var(--fg-1); cursor: pointer; font-family: inherit;
+  white-space: nowrap;
+  transition: background 80ms ease-out, color 80ms ease-out, border-color 80ms ease-out;
+}
+.btn:hover { background: var(--surface-2); }
+.btn.sm { height: 26px; padding: 0 8px; font-size: 12px; }
+.btn.lg { height: 36px; padding: 0 14px; font-size: 13px; }
+.btn.xl { height: 40px; padding: 0 16px; font-size: 14px; }
+.btn.primary { background: var(--brand); color: var(--fg-on-brand); border-color: var(--brand); }
+.btn.primary:hover { background: var(--brand-hover); border-color: var(--brand-hover); }
+.btn.secondary { background: var(--surface); border-color: var(--border-strong); color: var(--fg-1); }
+.btn.secondary:hover { background: var(--surface-2); }
+.btn.tertiary { color: var(--fg-2); }
+.btn.tertiary:hover { color: var(--fg-1); background: var(--surface-2); }
+.btn.success-fill { background: var(--success); color: #fff; border-color: var(--success); }
+.btn.success-fill:hover { filter: brightness(1.05); }
+.btn.icon { width: 32px; padding: 0; }
+.btn.icon.sm { width: 26px; }
+.btn:disabled, .btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+
+/* =========== BADGES / TAGS =========== */
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.dot.success { background: var(--success); }
+.dot.warning { background: var(--warning); }
+.dot.critical { background: var(--critical); }
+.dot.info    { background: var(--info); }
+.dot.gray    { background: var(--fg-3); }
+
+.tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  border-radius: var(--radius-sm); padding: 2px 8px;
+  font-size: 11px; font-weight: 500;
+  line-height: 1.4;
+}
+.tag.info     { background: var(--info-bg);     color: var(--info-fg); }
+.tag.warning  { background: var(--warning-bg);  color: var(--warning-fg); }
+.tag.critical { background: var(--critical-bg); color: var(--critical-fg); }
+.tag.success  { background: var(--success-bg);  color: var(--success-fg); }
+.tag.neutral  { background: var(--surface-2);   color: var(--fg-2); }
+
+/* =========== INPUTS =========== */
+.input {
+  height: 32px; background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 0 10px; font-size: 13px;
+  color: var(--fg-1); width: 100%;
+  font-family: inherit;
+}
+.input.mono { font-family: var(--font-mono); font-size: 12.5px; }
+.input:focus { outline: 2px solid var(--brand); outline-offset: 1px; border-color: var(--brand); }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field-label { font-size: 12px; font-weight: 500; color: var(--fg-1); }
+.field-help { font-size: 11px; color: var(--fg-2); }
+
+.toggle {
+  position: relative; display: inline-block;
+  width: 32px; height: 18px;
+  border-radius: 9999px; background: var(--border-strong);
+  flex-shrink: 0; cursor: pointer;
+  transition: background 120ms ease-out;
+  border: none; padding: 0;
+}
+.toggle.on { background: var(--brand); }
+.toggle::after {
+  content: ""; position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  transition: transform 120ms ease-out;
+}
+.toggle.on::after { transform: translateX(14px); }
+
+.radio-group {
+  display: inline-flex;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 2px;
+  gap: 2px;
+}
+.radio-group button {
+  height: 26px; padding: 0 10px;
+  border: none; background: transparent;
+  font: inherit; font-size: 12px; font-weight: 500;
+  color: var(--fg-2); cursor: pointer;
+  border-radius: var(--radius-sm);
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.radio-group button:hover { color: var(--fg-1); }
+.radio-group button.on {
+  background: var(--surface);
+  color: var(--fg-1);
+  box-shadow: var(--shadow-1);
+}
+
+/* =========== CARD / PANEL =========== */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+}
+
+/* =========== LAYOUT =========== */
+.page {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 20px 20px 60px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 540px;
+  gap: 20px;
+  align-items: start;
+}
+
+/* =========== LEFT — DRAWING CANVAS =========== */
+.canvas-col {
+  display: flex; flex-direction: column;
+  gap: 12px;
+  position: sticky; top: 68px;
+}
+
+.tool-bar {
+  display: flex; align-items: center;
+  gap: 6px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+}
+.tool-bar .spacer { flex: 1; }
+.tool-bar .vsep { width: 1px; align-self: stretch; background: var(--border); margin: 0 2px; }
+.tool-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 30px; padding: 0 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: var(--radius-md);
+  font: inherit; font-size: 12.5px; font-weight: 500;
+  color: var(--fg-1); cursor: pointer;
+  white-space: nowrap;
+}
+.tool-btn:hover { background: var(--surface-2); }
+.tool-btn .swatch {
+  width: 14px; height: 14px;
+  border-radius: 3px;
+  border: 1.5px solid var(--swatch-stroke, var(--brand));
+  background: var(--swatch-fill, transparent);
+  flex-shrink: 0;
+}
+.tool-btn.on {
+  background: var(--surface-2);
+  border-color: var(--border);
+  box-shadow: var(--shadow-1);
+}
+.tool-btn.icon-only {
+  width: 30px; padding: 0; justify-content: center;
+  color: var(--fg-2);
+}
+.tool-btn.icon-only:hover { color: var(--fg-1); }
+
+.stage-wrap {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-1);
+}
+.stage-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.stage-svg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  touch-action: none;
+}
+.stage-meta {
+  position: absolute;
+  top: 10px; left: 10px;
+  display: flex; gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #F5F5F4;
+}
+.stage-meta .chip {
+  background: rgba(10,10,9,0.55);
+  backdrop-filter: none;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.02em;
+}
+.stage-meta .chip.live { display: inline-flex; align-items: center; gap: 6px; }
+.stage-meta .chip.live::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--success); display: inline-block;
+}
+
+.stage-corner-tr {
+  position: absolute; top: 10px; right: 10px;
+  display: flex; gap: 6px;
+}
+.icon-pill {
+  height: 26px; padding: 0 9px;
+  background: rgba(10,10,9,0.55); color: #F5F5F4;
+  border-radius: var(--radius-sm); border: none;
+  font: inherit; font-size: 11px; font-weight: 500;
+  display: inline-flex; align-items: center; gap: 6px;
+  cursor: pointer;
+}
+.icon-pill:hover { background: rgba(10,10,9,0.75); }
+
+.caption {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px; color: var(--fg-2);
+  padding: 0 2px;
+}
+.caption kbd {
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 500;
+  color: var(--fg-2); background: var(--surface);
+  border: 1px solid var(--border-strong); border-bottom-width: 2px;
+  border-radius: var(--radius-sm); padding: 0 5px;
+  display: inline-block;
+}
+
+/* shape label tag inside SVG */
+.shape-label {
+  fill: #FFFFFF;
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* =========== RIGHT — FORM =========== */
+.form-col {
+  display: flex; flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.form-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 0 4px 4px;
+}
+.form-head h1 {
+  font-size: 15px; font-weight: 600; margin: 0; letter-spacing: -0.005em;
+}
+.form-head .meta { font-size: 12px; color: var(--fg-2); }
+
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+.section-head {
+  display: flex; align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  background: var(--surface);
+  border: none; width: 100%;
+  font: inherit; text-align: left;
+  color: var(--fg-1);
+}
+.section-head:hover { background: var(--surface-2); }
+.step-num {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px; font-weight: 500;
+  color: var(--fg-2);
+  flex-shrink: 0;
+}
+.step-num.done { background: var(--brand); color: var(--fg-on-brand); border-color: var(--brand); }
+.step-num.active {
+  background: var(--brand-subtle); color: var(--brand-subtle-fg);
+  border-color: var(--brand);
+}
+.section-title { font-size: 14px; font-weight: 600; }
+.section-sub { font-size: 12px; color: var(--fg-2); font-weight: 400; margin-top: 1px; }
+.section-head .right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.chev {
+  color: var(--fg-3);
+  transition: transform 120ms ease-out;
+}
+.chev.open { transform: rotate(90deg); }
+
+.section-body {
+  padding: 4px 16px 16px;
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  gap: 14px;
+}
+.section-body p { margin: 0; color: var(--fg-2); font-size: 13px; }
+
+.kv {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+}
+.kv .k { font-size: 12px; color: var(--fg-2); }
+.kv .v { font-size: 13px; color: var(--fg-1); }
+
+.subrow {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+.subrow .body { flex: 1; min-width: 0; }
+.subrow .head {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; font-weight: 500; color: var(--fg-1);
+}
+.subrow .sub { font-size: 12px; color: var(--fg-2); margin-top: 2px; }
+
+.crop-preview {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.crop-preview .thumb {
+  width: 96px; height: 64px;
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(135deg, #0a0a09 0%, #1c1c1b 50%, #292524 100%);
+  border: 1px solid var(--border-strong);
+  position: relative;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  display: flex; align-items: center; justify-content: center;
+  color: #4ade80;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+.crop-preview .ocr {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-2);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  line-height: 1.5;
+}
+.crop-preview .ocr .label { color: var(--fg-3); }
+.crop-preview .ocr .val { color: var(--fg-1); }
+
+.connection-status {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--fg-2);
+}
+.connection-status .meta-mono {
+  font-family: var(--font-mono);
+  color: var(--fg-1);
+}
+
+.note {
+  font-size: 11.5px;
+  color: var(--fg-3);
+  line-height: 1.5;
+  border-left: 2px solid var(--border);
+  padding-left: 10px;
+}
+
+.test-result {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: var(--fg-1);
+}
+.test-result .line { display: flex; gap: 8px; align-items: baseline; }
+.test-result .ok   { color: var(--success); }
+.test-result .warn { color: var(--warning); }
+.test-result .dim  { color: var(--fg-2); }
+
+.summary-card {
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 16px;
+}
+.summary-card .progress {
+  flex: 1;
+}
+.summary-card .progress-bar {
+  height: 6px;
+  background: var(--surface-2);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-top: 6px;
+}
+.summary-card .progress-bar .fill {
+  height: 100%;
+  background: var(--brand);
+  transition: width 240ms ease-out;
+}
+
+.actions-row {
+  display: flex; gap: 10px;
+  padding: 12px 0 0;
+}
+
+/* =========== MODAL =========== */
+.modal-scrim {
+  position: fixed; inset: 0;
+  background: var(--scrim);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 50;
+  animation: fadeIn 120ms ease-out;
+}
+.modal {
+  width: 440px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  padding: 24px;
+  display: flex; flex-direction: column;
+  gap: 16px;
+}
+.modal .icon-circle {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--success-bg); color: var(--success);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.modal h2 { font-size: 16px; font-weight: 600; margin: 0; }
+.modal p { font-size: 13px; color: var(--fg-2); margin: 0; line-height: 1.55; }
+.modal .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.spinner {
+  width: 12px; height: 12px;
+  border: 1.5px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 700ms linear infinite;
+}
+
+/* visited-but-not-explored hover state for handles */
+.handle {
+  cursor: grab;
+}
+.handle:active { cursor: grabbing; }
+.shape-group { cursor: pointer; }
+.shape-group.locked { pointer-events: none; }
+
+/* utility */
+.sep-h { height: 1px; background: var(--border); }
+.muted-mono { font-family: var(--font-mono); color: var(--fg-2); font-size: 11.5px; }
+
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+/* global React, ReactDOM */
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+/* ===================== ICONS (Lucide-style, 1.5px) ===================== */
+const Icon = ({ d, size = 16, stroke = 1.5, fill = "none", children, ...rest }) => (
+  <svg
+    width={size} height={size} viewBox="0 0 24 24"
+    fill={fill} stroke="currentColor" strokeWidth={stroke}
+    strokeLinecap="round" strokeLinejoin="round" {...rest}
+  >
+    {d ? <path d={d} /> : children}
+  </svg>
+);
+const I = {
+  ArrowLeft: (p) => <Icon {...p}><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></Icon>,
+  ChevronRight: (p) => <Icon {...p} d="m9 18 6-6-6-6"/>,
+  ChevronDown:  (p) => <Icon {...p} d="m6 9 6 6 6-6"/>,
+  Sun: (p) => <Icon {...p}><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m4.93 19.07 1.41-1.41"/><path d="m17.66 6.34 1.41-1.41"/></Icon>,
+  Moon: (p) => <Icon {...p} d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>,
+  Check: (p) => <Icon {...p} d="M20 6 9 17l-5-5"/>,
+  CheckCircle: (p) => <Icon {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></Icon>,
+  Plus: (p) => <Icon {...p}><path d="M12 5v14"/><path d="M5 12h14"/></Icon>,
+  Minus: (p) => <Icon {...p} d="M5 12h14"/>,
+  Trash: (p) => <Icon {...p}><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></Icon>,
+  Undo: (p) => <Icon {...p}><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></Icon>,
+  Redo: (p) => <Icon {...p}><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 15-6.7L21 13"/></Icon>,
+  Refresh: (p) => <Icon {...p}><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></Icon>,
+  Reset: (p) => <Icon {...p}><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></Icon>,
+  Camera: (p) => <Icon {...p}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></Icon>,
+  Edit: (p) => <Icon {...p}><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></Icon>,
+  Zap: (p) => <Icon {...p} d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>,
+  Maximize: (p) => <Icon {...p}><path d="M3 9V3h6"/><path d="M21 9V3h-6"/><path d="M3 15v6h6"/><path d="M21 15v6h-6"/></Icon>,
+  Eye: (p) => <Icon {...p}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></Icon>,
+  Help: (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></Icon>,
+  X: (p) => <Icon {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></Icon>,
+  Lock: (p) => <Icon {...p}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></Icon>,
+};
+
+/* ===================== UTIL ===================== */
+const SHAPE_META = {
+  bed:     { label: "Bed zone",       stroke: "var(--bed-stroke)", fill: "var(--bed-fill)" },
+  monitor: { label: "Monitor crop",   stroke: "var(--mon-stroke)", fill: "var(--mon-fill)" },
+  iv:      { label: "IV/oxygen crop", stroke: "var(--iv-stroke)",  fill: "var(--iv-fill)" },
+};
+
+/* Coordinate system: SVG viewBox 1280 × 720, matching the picsum image */
+const INITIAL_SHAPES = {
+  bed: {
+    type: "polygon",
+    points: [
+      [310, 410],
+      [970, 410],
+      [1095, 690],
+      [190, 690],
+    ],
+  },
+  monitor: {
+    type: "rect",
+    x: 870, y: 90, w: 310, h: 180,
+  },
+  iv: {
+    type: "rect",
+    x: 95, y: 80, w: 200, h: 290,
+  },
+};
+
+const INITIAL_SECTIONS = {
+  source:  { status: "complete",     open: false },
+  bed:     { status: "in-progress",  open: true  },
+  crops:   { status: "not-started",  open: false },
+  test:    { status: "not-started",  open: false },
+};
+
+function BrandMark({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" aria-label="Aida">
+      <path fill="currentColor" fillRule="evenodd" d="M14 0h36a14 14 0 0 1 14 14v36a14 14 0 0 1-14 14H14A14 14 0 0 1 0 50V14A14 14 0 0 1 14 0Zm-2 25a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h40a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H12Z"></path>
+    </svg>
+  );
+}
+
+/* ===================== TOP BAR ===================== */
+function TopBar({ theme, onToggleTheme, onSave }) {
+  return (
+    <header className="topbar">
+      <div className="left">
+        <a href="#" className="brand-mark" aria-label="Aida home" style={{color:"var(--brand)", display:"inline-flex"}}>
+          <BrandMark size={20}/>
+        </a>
+        <div className="crumbs">
+          <a href="#" className="crumb-back">
+            <I.ArrowLeft size={14}/> Back
+          </a>
+          <span className="sep">/</span>
+          <span className="ctx">Ward 4 · ICU</span>
+          <span className="sep">/</span>
+          <span className="title">
+            Setup <span className="ctx" style={{fontWeight:400}}>·</span>{" "}
+            <span className="bed-id-mono">Bed&nbsp;ICU-2</span>
+          </span>
+        </div>
+      </div>
+      <div className="right">
+        <span className="tag neutral mono" title="Draft auto-saves every 30s">
+          <span className="dot gray"></span>Draft · saved 14:31
+        </span>
+        <div className="divider"></div>
+        <button className="btn icon tertiary" title="Help">
+          <I.Help size={15}/>
+        </button>
+        <button
+          className="btn icon tertiary"
+          onClick={onToggleTheme}
+          title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+        >
+          {theme === "dark" ? <I.Sun size={15}/> : <I.Moon size={15}/>}
+        </button>
+        <button className="btn secondary" onClick={onSave}>Save &amp; exit</button>
+      </div>
+    </header>
+  );
+}
+
+/* ===================== DRAWING TOOLBAR ===================== */
+function Toolbar({ tool, onTool, onUndo, onRedo, onReset, onClearShape }) {
+  const ToolPill = ({ id, label }) => {
+    const m = SHAPE_META[id];
+    return (
+      <button
+        className={"tool-btn" + (tool === id ? " on" : "")}
+        onClick={() => onTool(id)}
+        style={{
+          "--swatch-stroke": m.stroke,
+          "--swatch-fill": m.fill,
+        }}
+      >
+        <span className="swatch"></span>
+        {label}
+      </button>
+    );
+  };
+
+  return (
+    <div className="tool-bar" role="toolbar" aria-label="Drawing tools">
+      <ToolPill id="bed"     label="Bed zone"/>
+      <ToolPill id="monitor" label="Monitor crop"/>
+      <ToolPill id="iv"      label="IV/oxygen crop"/>
+
+      <div className="vsep"></div>
+
+      <button className="tool-btn icon-only" title="Add point" disabled={tool !== "bed"}>
+        <I.Plus size={15}/>
+      </button>
+      <button className="tool-btn icon-only" title="Remove point" disabled={tool !== "bed"}>
+        <I.Minus size={15}/>
+      </button>
+      <button className="tool-btn icon-only" title="Clear shape" onClick={onClearShape}>
+        <I.Trash size={14}/>
+      </button>
+
+      <div className="spacer"></div>
+
+      <button className="tool-btn icon-only" title="Undo (⌘Z)" onClick={onUndo}>
+        <I.Undo size={15}/>
+      </button>
+      <button className="tool-btn icon-only" title="Redo (⌘⇧Z)" onClick={onRedo}>
+        <I.Redo size={15}/>
+      </button>
+      <div className="vsep"></div>
+      <button className="tool-btn" onClick={onReset}>
+        <I.Reset size={14}/> Reset all
+      </button>
+    </div>
+  );
+}
+
+/* ===================== STAGE / CANVAS ===================== */
+function Stage({ shapes, setShapes, tool, onTool, showFloor }) {
+  const svgRef = useRef(null);
+  const [drag, setDrag] = useState(null); // { shape, kind, index, startX, startY, origin }
+
+  const VB_W = 1280, VB_H = 720;
+
+  const toSvgCoords = (e) => {
+    const svg = svgRef.current;
+    if (!svg) return [0, 0];
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const m = svg.getScreenCTM();
+    if (!m) return [0, 0];
+    const sp = pt.matrixTransform(m.inverse());
+    return [sp.x, sp.y];
+  };
+
+  const onPointerDown = (e, info) => {
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    const [x, y] = toSvgCoords(e);
+    setDrag({ ...info, startX: x, startY: y, origin: JSON.parse(JSON.stringify(shapes[info.shape])) });
+    onTool(info.shape);
+  };
+
+  const onPointerMove = (e) => {
+    if (!drag) return;
+    const [x, y] = toSvgCoords(e);
+    const dx = x - drag.startX;
+    const dy = y - drag.startY;
+    setShapes(prev => {
+      const next = { ...prev };
+      const s = JSON.parse(JSON.stringify(drag.origin));
+      if (drag.kind === "vertex") {
+        // polygon vertex
+        s.points[drag.index] = [
+          clamp(drag.origin.points[drag.index][0] + dx, 0, VB_W),
+          clamp(drag.origin.points[drag.index][1] + dy, 0, VB_H),
+        ];
+      } else if (drag.kind === "rect-corner") {
+        // rect resize via corner: index 0..3 → tl,tr,br,bl
+        const o = drag.origin;
+        let { x: rx, y: ry, w, h } = o;
+        let x2 = rx + w, y2 = ry + h;
+        if (drag.index === 0) { rx = clamp(rx + dx, 0, x2 - 30); ry = clamp(ry + dy, 0, y2 - 30); }
+        if (drag.index === 1) { x2 = clamp(x2 + dx, rx + 30, VB_W); ry = clamp(ry + dy, 0, y2 - 30); }
+        if (drag.index === 2) { x2 = clamp(x2 + dx, rx + 30, VB_W); y2 = clamp(y2 + dy, ry + 30, VB_H); }
+        if (drag.index === 3) { rx = clamp(rx + dx, 0, x2 - 30); y2 = clamp(y2 + dy, ry + 30, VB_H); }
+        s.x = rx; s.y = ry; s.w = x2 - rx; s.h = y2 - ry;
+      } else if (drag.kind === "body") {
+        if (drag.origin.type === "polygon") {
+          s.points = drag.origin.points.map(([px, py]) => [
+            clamp(px + dx, 0, VB_W),
+            clamp(py + dy, 0, VB_H),
+          ]);
+        } else {
+          s.x = clamp(drag.origin.x + dx, 0, VB_W - drag.origin.w);
+          s.y = clamp(drag.origin.y + dy, 0, VB_H - drag.origin.h);
+        }
+      }
+      next[drag.shape] = s;
+      return next;
+    });
+  };
+
+  const onPointerUp = () => setDrag(null);
+
+  // floor polygon = derived band below the bed polygon
+  const floor = useMemo(() => {
+    const bed = shapes.bed.points;
+    if (!bed) return null;
+    // bottom two vertices (highest y), shifted further down within frame
+    const sorted = [...bed].sort((a,b) => b[1] - a[1]);
+    const [b1, b2] = sorted.slice(0, 2).sort((a,b) => a[0] - b[0]);
+    const padX = 60;
+    return [
+      [Math.max(0, b1[0] - padX), b1[1]],
+      [Math.min(VB_W, b2[0] + padX), b2[1]],
+      [VB_W, VB_H],
+      [0, VB_H],
+    ];
+  }, [shapes.bed]);
+
+  return (
+    <div className="stage-wrap">
+      <img
+        src="https://picsum.photos/seed/icusetup3/1280/720"
+        className="stage-image"
+        alt="Camera still — ICU Bed 2"
+        draggable="false"
+      />
+      <svg
+        ref={svgRef}
+        className="stage-svg"
+        viewBox={`0 0 ${VB_W} ${VB_H}`}
+        preserveAspectRatio="none"
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerLeave={onPointerUp}
+      >
+        {/* dim outside selected shape, optional — skip for cleanliness */}
+
+        {/* FLOOR (auto-derived) */}
+        {showFloor && floor && (
+          <g pointerEvents="none">
+            <polygon
+              points={floor.map(p => p.join(",")).join(" ")}
+              fill="var(--floor-fill)"
+              stroke="var(--floor-stroke)"
+              strokeWidth="1.5"
+              strokeDasharray="6 5"
+            />
+            <ShapeLabel
+              x={floor[0][0] + 8}
+              y={floor[0][1] + 8}
+              stroke="var(--floor-stroke)"
+              text="Floor zone · auto"
+              dashed
+            />
+          </g>
+        )}
+
+        {/* IV crop */}
+        <Shape
+          id="iv"
+          data={shapes.iv}
+          active={tool === "iv"}
+          dim={tool !== "iv"}
+          onBodyDown={(e) => onPointerDown(e, { shape: "iv", kind: "body" })}
+          onCornerDown={(e, idx) => onPointerDown(e, { shape: "iv", kind: "rect-corner", index: idx })}
+        />
+
+        {/* Monitor crop */}
+        <Shape
+          id="monitor"
+          data={shapes.monitor}
+          active={tool === "monitor"}
+          dim={tool !== "monitor"}
+          onBodyDown={(e) => onPointerDown(e, { shape: "monitor", kind: "body" })}
+          onCornerDown={(e, idx) => onPointerDown(e, { shape: "monitor", kind: "rect-corner", index: idx })}
+        />
+
+        {/* Bed zone (drawn last so it sits on top — it's the primary shape) */}
+        <Shape
+          id="bed"
+          data={shapes.bed}
+          active={tool === "bed"}
+          dim={tool !== "bed"}
+          onBodyDown={(e) => onPointerDown(e, { shape: "bed", kind: "body" })}
+          onVertexDown={(e, idx) => onPointerDown(e, { shape: "bed", kind: "vertex", index: idx })}
+        />
+      </svg>
+
+      {/* corner overlays */}
+      <div className="stage-meta">
+        <span className="chip live">LIVE STILL · 14:31:08</span>
+        <span className="chip">1280×720 · 24fps</span>
+        <span className="chip">ICU-2 · cam-04</span>
+      </div>
+      <div className="stage-corner-tr">
+        <button className="icon-pill" title="Capture new still">
+          <I.Camera size={13}/> New still
+        </button>
+        <button className="icon-pill" title="Fullscreen">
+          <I.Maximize size={13}/>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* A shape (polygon or rect) with body + handles */
+function Shape({ id, data, active, dim, onBodyDown, onVertexDown, onCornerDown }) {
+  const m = SHAPE_META[id];
+  const stroke = m.stroke;
+  const fill = m.fill;
+  const opacity = dim ? 0.55 : 1;
+  const dashArray = data.type === "rect" ? "8 6" : null;
+
+  const pointsStr = data.type === "polygon"
+    ? data.points.map(p => p.join(",")).join(" ")
+    : null;
+
+  // Label position — top-left of bounding box
+  const bb = bbox(data);
+  const labelW = (m.label.length * 6.4) + 16;
+
+  return (
+    <g className={"shape-group" + (active ? " active" : "")} opacity={opacity}>
+      {/* fill / body */}
+      {data.type === "polygon" ? (
+        <polygon
+          points={pointsStr}
+          fill={fill}
+          stroke={stroke}
+          strokeWidth={active ? 2 : 1.5}
+          onPointerDown={onBodyDown}
+          style={{ cursor: "move" }}
+        />
+      ) : (
+        <rect
+          x={data.x} y={data.y} width={data.w} height={data.h}
+          fill={fill}
+          stroke={stroke}
+          strokeWidth={active ? 2 : 1.5}
+          strokeDasharray={dashArray}
+          onPointerDown={onBodyDown}
+          style={{ cursor: "move" }}
+        />
+      )}
+
+      {/* label tag */}
+      <g pointerEvents="none">
+        <rect
+          x={bb.x}
+          y={bb.y - 20}
+          width={labelW}
+          height={18}
+          rx={3}
+          fill={stroke}
+        />
+        <text
+          x={bb.x + 8}
+          y={bb.y - 7}
+          className="shape-label"
+        >
+          {m.label}
+        </text>
+      </g>
+
+      {/* handles */}
+      {active && data.type === "polygon" && data.points.map(([px, py], i) => (
+        <Handle key={i} cx={px} cy={py} color={stroke} onPointerDown={(e) => onVertexDown(e, i)}/>
+      ))}
+      {active && data.type === "rect" && [
+        [data.x, data.y],
+        [data.x + data.w, data.y],
+        [data.x + data.w, data.y + data.h],
+        [data.x, data.y + data.h],
+      ].map(([px, py], i) => (
+        <Handle key={i} cx={px} cy={py} color={stroke} square onPointerDown={(e) => onCornerDown(e, i)}/>
+      ))}
+
+      {/* hairline midpoint markers (subtle, for polygon only) */}
+      {active && data.type === "polygon" && data.points.map((p, i) => {
+        const next = data.points[(i + 1) % data.points.length];
+        const mx = (p[0] + next[0]) / 2;
+        const my = (p[1] + next[1]) / 2;
+        return (
+          <circle key={`mid-${i}`} cx={mx} cy={my} r={3.5}
+            fill="var(--surface)" stroke={stroke} strokeWidth="1.5"
+            opacity="0.55" pointerEvents="none"/>
+        );
+      })}
+    </g>
+  );
+}
+
+function Handle({ cx, cy, color, square, onPointerDown }) {
+  const size = 10;
+  if (square) {
+    return (
+      <g className="handle" onPointerDown={onPointerDown}>
+        <rect
+          x={cx - size/2} y={cy - size/2}
+          width={size} height={size}
+          fill="#fff" stroke={color} strokeWidth="2"
+          rx="1.5"
+        />
+      </g>
+    );
+  }
+  return (
+    <g className="handle" onPointerDown={onPointerDown}>
+      <rect
+        x={cx - size/2} y={cy - size/2}
+        width={size} height={size}
+        fill="#fff" stroke={color} strokeWidth="2"
+        rx="2"
+      />
+    </g>
+  );
+}
+
+function ShapeLabel({ x, y, stroke, text, dashed }) {
+  const labelW = (text.length * 6.4) + 16;
+  return (
+    <g>
+      <rect
+        x={x} y={y}
+        width={labelW} height={18}
+        rx={3}
+        fill={stroke}
+        opacity={dashed ? 0.92 : 1}
+      />
+      <text
+        x={x + 8} y={y + 13}
+        className="shape-label"
+      >
+        {text}
+      </text>
+    </g>
+  );
+}
+
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+function bbox(d) {
+  if (d.type === "rect") return { x: d.x, y: d.y, w: d.w, h: d.h };
+  let xs = d.points.map(p => p[0]);
+  let ys = d.points.map(p => p[1]);
+  const x = Math.min(...xs), y = Math.min(...ys);
+  return { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y };
+}
+
+function polygonArea(points) {
+  let a = 0;
+  for (let i = 0; i < points.length; i++) {
+    const [x1, y1] = points[i];
+    const [x2, y2] = points[(i + 1) % points.length];
+    a += x1 * y2 - x2 * y1;
+  }
+  return Math.abs(a / 2);
+}
+
+/* Make these available to other Babel scripts */
+Object.assign(window, {
+  I, SHAPE_META, INITIAL_SHAPES, INITIAL_SECTIONS,
+  TopBar, Toolbar, Stage, clamp, bbox, polygonArea,
+});
+
+</script>
+<script type="text/babel" data-presets="react">
+/* global React */
+const { useState: useState_F } = React;
+
+/* ===================== STATUS PILL ===================== */
+function StatusPill({ status }) {
+  if (status === "complete") {
+    return <span className="tag success"><span className="dot success"></span>Complete</span>;
+  }
+  if (status === "in-progress") {
+    return <span className="tag warning"><span className="dot warning"></span>In progress</span>;
+  }
+  return <span className="tag neutral"><span className="dot gray"></span>Not started</span>;
+}
+
+/* ===================== SECTION SHELL ===================== */
+function Section({ idx, title, subtitle, status, open, onToggle, children }) {
+  let stepClass = "step-num";
+  if (status === "complete") stepClass += " done";
+  else if (status === "in-progress") stepClass += " active";
+
+  return (
+    <div className="section">
+      <button className="section-head" onClick={onToggle} aria-expanded={open}>
+        <span className={stepClass}>
+          {status === "complete" ? <I.Check size={12}/> : idx}
+        </span>
+        <span style={{flex:1, minWidth:0}}>
+          <div className="section-title">{title}</div>
+          {subtitle && <div className="section-sub">{subtitle}</div>}
+        </span>
+        <span className="right">
+          <StatusPill status={status}/>
+          <span className={"chev" + (open ? " open" : "")}>
+            <I.ChevronRight size={16}/>
+          </span>
+        </span>
+      </button>
+      {open && <div className="section-body">{children}</div>}
+    </div>
+  );
+}
+
+/* ===================== SECTION 1: CAMERA SOURCE ===================== */
+function SourceSection({ section, toggle }) {
+  const [type, setType] = useState_F("rtsp");
+  const [url, setUrl] = useState_F("rtsp://192.168.1.42:554/stream1");
+  const [conn, setConn] = useState_F("connected"); // idle | testing | connected | failed
+
+  const test = () => {
+    setConn("testing");
+    setTimeout(() => setConn("connected"), 1100);
+  };
+
+  return (
+    <Section
+      idx={1}
+      title="Camera source"
+      subtitle="RTSP · 1080p @ 24fps · Connected"
+      status={section.status}
+      open={section.open}
+      onToggle={toggle}
+    >
+      <div className="field">
+        <span className="field-label">Source type</span>
+        <div className="radio-group">
+          {[
+            ["webcam","Webcam"],
+            ["rtsp","RTSP"],
+            ["file","Video file"],
+            ["synthetic","Synthetic"],
+          ].map(([k, label]) => (
+            <button key={k} className={type === k ? "on" : ""} onClick={() => setType(k)}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {type === "rtsp" && (
+        <div className="field">
+          <span className="field-label">Stream URL</span>
+          <div style={{display:"flex", gap:8}}>
+            <input
+              className="input mono"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+            />
+            <button className="btn secondary" onClick={test} disabled={conn === "testing"}>
+              {conn === "testing" ? <><span className="spinner"></span>Testing…</> : "Test connection"}
+            </button>
+          </div>
+          <span className="connection-status">
+            {conn === "connected" && (<>
+              <span className="dot success"></span>
+              <span>Connected · <span className="meta-mono">1080p · 24fps · 4.2 Mbps</span></span>
+            </>)}
+            {conn === "testing" && (<>
+              <span className="dot warning"></span><span>Negotiating stream…</span>
+            </>)}
+            {conn === "failed" && (<>
+              <span className="dot critical"></span><span>Connection failed</span>
+            </>)}
+          </span>
+        </div>
+      )}
+
+      <div className="kv" style={{marginTop:4}}>
+        <span className="k">Codec · Resolution · Latency</span>
+        <span className="v mono" style={{fontSize:12}}>H.264 · 1920×1080 · 180ms</span>
+      </div>
+      <div className="kv">
+        <span className="k">Camera label</span>
+        <span className="v mono" style={{fontSize:12}}>cam-04 (Axis P1378)</span>
+      </div>
+    </Section>
+  );
+}
+
+/* ===================== SECTION 2: BED ZONE ===================== */
+function BedSection({ section, toggle, shapes, areaPct, showFloor, setShowFloor, onTool }) {
+  return (
+    <Section
+      idx={2}
+      title="Bed-zone calibration"
+      subtitle={`4 points · ${areaPct}% of frame · last edited 2 min ago`}
+      status={section.status}
+      open={section.open}
+      onToggle={toggle}
+    >
+      <p>
+        Draw a polygon around the bed area. Include the full mattress surface — this is
+        the zone Aida uses to determine if the patient is in bed, sitting on the edge,
+        or out of bed.
+      </p>
+
+      <div style={{
+        display:"grid",
+        gridTemplateColumns:"1fr 1fr 1fr",
+        gap:8,
+        background:"var(--surface-2)",
+        border:"1px solid var(--border)",
+        borderRadius:"var(--radius-md)",
+        padding:"10px 12px",
+      }}>
+        <Stat label="Points"     value={shapes.bed.points.length}/>
+        <Stat label="Frame area" value={`${areaPct}%`}/>
+        <Stat label="Last edit"  value="2m ago" mono={false}/>
+      </div>
+
+      <div style={{display:"flex", alignItems:"center", justifyContent:"space-between"}}>
+        <label style={{display:"flex", alignItems:"center", gap:10, cursor:"pointer"}}>
+          <button
+            className={"toggle" + (showFloor ? " on" : "")}
+            onClick={() => setShowFloor(v => !v)}
+            aria-label="Toggle floor zone overlay"
+          ></button>
+          <span style={{fontSize:13}}>Show floor zone <span style={{color:"var(--fg-2)"}}>(auto-derived)</span></span>
+        </label>
+        <button className="btn secondary sm" onClick={() => onTool("bed")}>
+          <I.Edit size={13}/> Re-draw bed zone
+        </button>
+      </div>
+
+      <div className="note">
+        Aida derives the floor zone from the bed polygon's lower edge. Adjust the bed
+        polygon and the floor follows.
+      </div>
+    </Section>
+  );
+}
+
+function Stat({ label, value, mono = true }) {
+  return (
+    <div style={{display:"flex", flexDirection:"column", gap:2}}>
+      <span style={{fontSize:10.5, fontWeight:600, letterSpacing:"0.06em", textTransform:"uppercase", color:"var(--fg-3)"}}>{label}</span>
+      <span className={mono ? "mono" : ""} style={{fontSize:13, fontWeight:500}}>{value}</span>
+    </div>
+  );
+}
+
+/* ===================== SECTION 3: CROPS ===================== */
+function CropsSection({ section, toggle, monitorOn, setMonitorOn, ivOn, setIvOn, onTool }) {
+  return (
+    <Section
+      idx={3}
+      title="Optional crop zones"
+      subtitle="Help Aida focus on bedside monitor & IV"
+      status={section.status}
+      open={section.open}
+      onToggle={toggle}
+    >
+      <div className="subrow">
+        <div className="body">
+          <div className="head">
+            <span style={{
+              width:8, height:8, borderRadius:2,
+              background:"var(--mon-stroke)",
+              display:"inline-block"
+            }}></span>
+            Bedside monitor crop
+            <span className="tag info" style={{marginLeft:4}}>OCR</span>
+          </div>
+          <div className="sub">Reads vitals from the bedside monitor when GE/Philips integration is unavailable.</div>
+
+          {monitorOn && (
+            <div className="crop-preview">
+              <div className="thumb mono">
+                <span style={{display:"flex", flexDirection:"column", alignItems:"center", lineHeight:1.2, gap:1}}>
+                  <span style={{fontSize:14, color:"#4ade80"}}>78</span>
+                  <span style={{fontSize:8, color:"#94a3b8", letterSpacing:"0.1em"}}>HR</span>
+                </span>
+              </div>
+              <div className="ocr">
+                <span className="label">HR</span>   <span className="val">78 bpm</span>
+                <span className="label">BP</span>   <span className="val">118/74</span>
+                <span className="label">SpO2</span> <span className="val">97 %</span>
+                <span className="label">RR</span>   <span className="val">14 /min</span>
+              </div>
+            </div>
+          )}
+          {monitorOn && (
+            <div style={{display:"flex", alignItems:"center", gap:10, marginTop:10}}>
+              <span className="connection-status">
+                <span className="dot success"></span>
+                <span>Crop quality: <span style={{color:"var(--fg-1)"}}>Good</span> · OCR confidence <span className="mono" style={{color:"var(--fg-1)"}}>0.94</span></span>
+              </span>
+              <button className="btn tertiary sm" style={{marginLeft:"auto"}} onClick={() => onTool("monitor")}>
+                <I.Edit size={12}/> Adjust crop
+              </button>
+            </div>
+          )}
+        </div>
+        <button
+          className={"toggle" + (monitorOn ? " on" : "")}
+          onClick={() => setMonitorOn(v => !v)}
+          aria-label="Enable bedside monitor crop"
+        ></button>
+      </div>
+
+      <div className="subrow">
+        <div className="body">
+          <div className="head">
+            <span style={{
+              width:8, height:8, borderRadius:2,
+              background:"var(--iv-stroke)",
+              display:"inline-block"
+            }}></span>
+            IV &amp; oxygen crop
+            <span className="tag neutral" style={{marginLeft:4}}>
+              <I.Lock size={10}/> Beta
+            </span>
+          </div>
+          <div className="sub">Detects IV bag near-empty and oxygen mask displacement. Optional — can be added later.</div>
+          {ivOn && (
+            <div style={{display:"flex", alignItems:"center", gap:10, marginTop:10}}>
+              <span className="connection-status">
+                <span className="dot warning"></span>
+                <span>Crop set · model training data still gathering (<span className="mono" style={{color:"var(--fg-1)"}}>14/100</span> samples)</span>
+              </span>
+              <button className="btn tertiary sm" style={{marginLeft:"auto"}} onClick={() => onTool("iv")}>
+                <I.Edit size={12}/> Adjust crop
+              </button>
+            </div>
+          )}
+        </div>
+        <button
+          className={"toggle" + (ivOn ? " on" : "")}
+          onClick={() => setIvOn(v => !v)}
+          aria-label="Enable IV/oxygen crop"
+        ></button>
+      </div>
+
+      <div className="note">
+        These crops help Aida focus its attention. Leave disabled if not applicable — the bed-zone calibration alone is enough for movement, presence, and fall detection.
+      </div>
+    </Section>
+  );
+}
+
+/* ===================== SECTION 4: TEST FEED ===================== */
+function TestSection({ section, toggle, tested, onRunTest, testing }) {
+  return (
+    <Section
+      idx={4}
+      title="Test feed"
+      subtitle={tested ? "Last test 14:29 · passed (5/5)" : "Run a 30-second test before going live"}
+      status={section.status}
+      open={section.open}
+      onToggle={toggle}
+    >
+      {!tested && !testing && (
+        <button className="btn primary xl" onClick={onRunTest} style={{width:"100%"}}>
+          <I.Zap size={15}/> Start 30-second test
+        </button>
+      )}
+      {testing && (
+        <div className="card" style={{padding:14, display:"flex", alignItems:"center", gap:12}}>
+          <span className="spinner" style={{color:"var(--brand)"}}></span>
+          <div style={{flex:1}}>
+            <div style={{fontSize:13, fontWeight:500}}>Running 30s test…</div>
+            <div className="muted-mono" style={{marginTop:2}}>Capturing frames, evaluating bed zone, exercising OCR</div>
+          </div>
+          <span className="mono" style={{fontSize:13, color:"var(--fg-2)"}}>00:18 / 00:30</span>
+        </div>
+      )}
+
+      {tested && (
+        <>
+          <div className="test-result">
+            <div className="line"><span className="ok">✓</span><span>Camera stream stable — 24fps, 0 dropped frames</span></div>
+            <div className="line"><span className="ok">✓</span><span>Bed zone detection — patient identified in <span style={{color:"var(--fg-1)"}}>28/30</span> frames</span></div>
+            <div className="line"><span className="ok">✓</span><span>Monitor OCR — 5/5 readings (HR, BP, SpO2, RR, MAP)</span></div>
+            <div className="line"><span className="warn">⚠</span><span>IV crop — not enabled</span></div>
+            <div className="line"><span className="ok">✓</span><span>Events firing as expected — <span className="dim">3 movement, 1 sit-up, 0 critical</span></span></div>
+            <div style={{height:1, background:"var(--border)", margin:"8px 0"}}></div>
+            <div className="line" style={{color:"var(--success-fg)"}}>
+              <span>Test passed.</span>
+              <span className="dim">Ready to go live.</span>
+            </div>
+          </div>
+          <div style={{display:"flex", alignItems:"center", gap:10}}>
+            <button className="btn tertiary sm" onClick={onRunTest}>
+              <I.Refresh size={13}/> Re-run test
+            </button>
+            <span className="muted-mono" style={{marginLeft:"auto"}}>
+              Report · <a href="#" style={{color:"var(--brand-subtle-fg)"}}>view full log</a>
+            </span>
+          </div>
+        </>
+      )}
+    </Section>
+  );
+}
+
+/* ===================== SUMMARY CARD ===================== */
+function SummaryCard({ completeCount, total, onSaveDraft, onGoLive }) {
+  const pct = (completeCount / total) * 100;
+  return (
+    <div className="card summary-card">
+      <div className="progress">
+        <div style={{display:"flex", alignItems:"baseline", justifyContent:"space-between"}}>
+          <span style={{fontSize:13, fontWeight:600}}>Setup status</span>
+          <span className="mono" style={{fontSize:12, color:"var(--fg-2)"}}>
+            <span style={{color:"var(--fg-1)", fontWeight:600}}>{completeCount}</span> of {total} complete
+          </span>
+        </div>
+        <div className="progress-bar">
+          <div className="fill" style={{width: `${pct}%`}}></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, {
+  Section, StatusPill,
+  SourceSection, BedSection, CropsSection, TestSection,
+  SummaryCard, Stat,
+});
+
+</script>
+<script type="text/babel" data-presets="react">
+/* global React, ReactDOM */
+const { useState: useStateApp, useEffect: useEffectApp, useMemo: useMemoApp } = React;
+
+function App() {
+  /* Theme */
+  const [theme, setTheme] = useStateApp(() => {
+    try { return localStorage.getItem("aida-theme") || "light"; } catch { return "light"; }
+  });
+  useEffectApp(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try { localStorage.setItem("aida-theme", theme); } catch {}
+  }, [theme]);
+
+  /* Sections */
+  const [sections, setSections] = useStateApp(INITIAL_SECTIONS);
+  const toggle = (key) => setSections(s => ({ ...s, [key]: { ...s[key], open: !s[key].open } }));
+  const setStatus = (key, status) => setSections(s => ({ ...s, [key]: { ...s[key], status } }));
+
+  /* Shapes */
+  const [shapes, setShapes] = useStateApp(INITIAL_SHAPES);
+  const [tool, setTool] = useStateApp("bed");
+  const [showFloor, setShowFloor] = useStateApp(false);
+
+  /* Optional crops */
+  const [monitorOn, setMonitorOn] = useStateApp(true);
+  const [ivOn, setIvOn] = useStateApp(false);
+
+  /* Update crops section status based on toggles */
+  useEffectApp(() => {
+    const next = (monitorOn || ivOn) ? "in-progress" : "not-started";
+    setSections(s => s.crops.status === next ? s : { ...s, crops: { ...s.crops, status: next } });
+  }, [monitorOn, ivOn]);
+
+  /* Test feed */
+  const [tested, setTested] = useStateApp(false);
+  const [testing, setTesting] = useStateApp(false);
+  const runTest = () => {
+    setTesting(true);
+    setTested(false);
+    setStatus("test", "in-progress");
+    setTimeout(() => {
+      setTesting(false);
+      setTested(true);
+      setStatus("test", "complete");
+    }, 1800);
+  };
+
+  /* Modal */
+  const [modal, setModal] = useStateApp(null); // null | "live" | "saved"
+
+  /* Bed-zone area percentage */
+  const areaPct = useMemoApp(() => {
+    const total = 1280 * 720;
+    return Math.round((polygonArea(shapes.bed.points) / total) * 100);
+  }, [shapes.bed]);
+
+  /* History */
+  const [history, setHistory] = useStateApp([]);
+  const [future, setFuture] = useStateApp([]);
+  const pushHistory = (s) => {
+    setHistory(h => [...h.slice(-20), s]);
+    setFuture([]);
+  };
+  const wrappedSetShapes = (updater) => {
+    setShapes(prev => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      // dedupe — only push on a real change
+      if (JSON.stringify(prev) !== JSON.stringify(next)) {
+        setHistory(h => [...h.slice(-20), prev]);
+        setFuture([]);
+      }
+      return next;
+    });
+  };
+  const undo = () => {
+    setHistory(h => {
+      if (!h.length) return h;
+      const last = h[h.length - 1];
+      setFuture(f => [shapes, ...f]);
+      setShapes(last);
+      return h.slice(0, -1);
+    });
+  };
+  const redo = () => {
+    setFuture(f => {
+      if (!f.length) return f;
+      const [next, ...rest] = f;
+      setHistory(h => [...h, shapes]);
+      setShapes(next);
+      return rest;
+    });
+  };
+  const resetAll = () => {
+    pushHistory(shapes);
+    setShapes(INITIAL_SHAPES);
+  };
+  const clearShape = () => {
+    pushHistory(shapes);
+    setShapes(s => {
+      const next = { ...s };
+      if (tool === "bed") next.bed = INITIAL_SHAPES.bed;
+      else if (tool === "monitor") next.monitor = INITIAL_SHAPES.monitor;
+      else next.iv = INITIAL_SHAPES.iv;
+      return next;
+    });
+  };
+
+  /* Counts */
+  const completeCount = Object.values(sections).filter(s => s.status === "complete").length;
+  const total = 4;
+
+  /* Selecting a tool also opens its section + opens bed section if drawing bed */
+  const handleSetTool = (id) => {
+    setTool(id);
+    const key = id === "bed" ? "bed" : "crops";
+    setSections(s => ({ ...s, [key]: { ...s[key], open: true } }));
+  };
+
+  return (
+    <>
+      <TopBar
+        theme={theme}
+        onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")}
+        onSave={() => setModal("saved")}
+      />
+
+      <main className="page">
+        {/* ============ LEFT — CANVAS ============ */}
+        <div className="canvas-col" data-screen-label="left/canvas">
+          <Toolbar
+            tool={tool}
+            onTool={handleSetTool}
+            onUndo={undo}
+            onRedo={redo}
+            onReset={resetAll}
+            onClearShape={clearShape}
+          />
+          <Stage
+            shapes={shapes}
+            setShapes={wrappedSetShapes}
+            tool={tool}
+            onTool={handleSetTool}
+            showFloor={showFloor}
+          />
+          <div className="caption">
+            <span>
+              Drag points to adjust. Click a shape to select it. Press <kbd>⌫</kbd> to remove a point.
+            </span>
+            <span className="mono" style={{color:"var(--fg-3)"}}>
+              History · {history.length} actions
+            </span>
+          </div>
+        </div>
+
+        {/* ============ RIGHT — FORM ============ */}
+        <div className="form-col" data-screen-label="right/form">
+          <div className="form-head">
+            <h1>Configure Bed ICU-2</h1>
+            <span className="meta">4 steps · ~3 minutes</span>
+          </div>
+
+          <SourceSection section={sections.source} toggle={() => toggle("source")}/>
+          <BedSection
+            section={sections.bed}
+            toggle={() => toggle("bed")}
+            shapes={shapes}
+            areaPct={areaPct}
+            showFloor={showFloor}
+            setShowFloor={setShowFloor}
+            onTool={handleSetTool}
+          />
+          <CropsSection
+            section={sections.crops}
+            toggle={() => toggle("crops")}
+            monitorOn={monitorOn}
+            setMonitorOn={setMonitorOn}
+            ivOn={ivOn}
+            setIvOn={setIvOn}
+            onTool={handleSetTool}
+          />
+          <TestSection
+            section={sections.test}
+            toggle={() => toggle("test")}
+            tested={tested}
+            testing={testing}
+            onRunTest={runTest}
+          />
+
+          <SummaryCard
+            completeCount={completeCount}
+            total={total}
+          />
+
+          <div className="actions-row">
+            <button className="btn secondary" onClick={() => setModal("saved")}>Save draft</button>
+            <button
+              className="btn primary"
+              style={{flex:1}}
+              onClick={() => setModal("live")}
+              title={completeCount < total ? "Some sections still incomplete — enabled for demo" : ""}
+            >
+              <I.CheckCircle size={15}/> Save &amp; go live
+            </button>
+          </div>
+
+          <div style={{
+            display:"flex", alignItems:"center", gap:8,
+            fontSize:11, color:"var(--fg-3)",
+            padding:"0 4px",
+          }}>
+            <I.Eye size={12}/>
+            Changes are not visible to ward staff until you go live.
+          </div>
+        </div>
+      </main>
+
+      {modal && (
+        <ResultModal
+          kind={modal}
+          onClose={() => setModal(null)}
+        />
+      )}
+    </>
+  );
+}
+
+function ResultModal({ kind, onClose }) {
+  if (kind === "live") {
+    return (
+      <div className="modal-scrim" onClick={onClose}>
+        <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Configuration live">
+          <div style={{display:"flex", alignItems:"center", gap:12}}>
+            <span className="icon-circle">
+              <I.Check size={18}/>
+            </span>
+            <div>
+              <h2>Bed ICU-2 is now live</h2>
+              <p style={{marginTop:2}}>
+                <span className="mono">cam-04</span> · streaming · 24fps
+              </p>
+            </div>
+            <button className="btn icon tertiary" style={{marginLeft:"auto"}} onClick={onClose} aria-label="Close">
+              <I.X size={14}/>
+            </button>
+          </div>
+          <p>
+            Aida is monitoring this bed. Events, vitals, and the live still are
+            visible in the monitor view. Configuration can be edited any time —
+            it will pause briefly while you make changes.
+          </p>
+          <div style={{
+            background:"var(--surface-2)", border:"1px solid var(--border)",
+            borderRadius:"var(--radius-md)", padding:"10px 12px",
+            display:"grid", gridTemplateColumns:"auto 1fr", gap:"4px 12px",
+            fontSize:12,
+          }}>
+            <span style={{color:"var(--fg-2)"}}>Bed zone</span>
+            <span className="mono">enabled · 4 points</span>
+            <span style={{color:"var(--fg-2)"}}>Floor zone</span>
+            <span className="mono">auto-derived</span>
+            <span style={{color:"var(--fg-2)"}}>Monitor OCR</span>
+            <span className="mono">enabled · conf 0.94</span>
+            <span style={{color:"var(--fg-2)"}}>IV/oxygen</span>
+            <span className="mono" style={{color:"var(--fg-3)"}}>disabled</span>
+          </div>
+          <div className="row">
+            <button className="btn tertiary" onClick={onClose}>Stay on setup</button>
+            <button className="btn primary" onClick={onClose}>
+              <I.ArrowLeft size={14}/> Back to monitor
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="modal-scrim" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Draft saved">
+        <div style={{display:"flex", alignItems:"center", gap:12}}>
+          <span className="icon-circle" style={{background:"var(--info-bg)", color:"var(--info)"}}>
+            <I.Check size={18}/>
+          </span>
+          <div>
+            <h2>Draft saved</h2>
+            <p style={{marginTop:2}}>Bed ICU-2 will continue with previous configuration.</p>
+          </div>
+          <button className="btn icon tertiary" style={{marginLeft:"auto"}} onClick={onClose} aria-label="Close">
+            <I.X size={14}/>
+          </button>
+        </div>
+        <div className="row">
+          <button className="btn primary" onClick={onClose}>OK</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+
+</script>
+</body>
+</html>

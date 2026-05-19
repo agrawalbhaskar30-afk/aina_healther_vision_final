@@ -14,7 +14,7 @@ Build a deployable, clinician-reviewed ambient video monitoring product for hosp
 
 ## Current Build Target
 
-The immediate build target is narrower than the full product vision: one private room, one monitored bed, one live remote video feed, one event timeline, evidence capture, VLM interpretation, and one grounded assistant. See `docs/ONE_BED_REMOTE_MONITORING_PLAN.html` for the active implementation spec.
+The immediate build target is narrower than the full product vision: one private room, one monitored bed, one live remote video feed, one event timeline, evidence capture, VLM interpretation, and one grounded assistant. The current prototype implements this through the imported Aida mockup workflow served by FastAPI, with runtime wiring for setup, live monitor, review, and assistant interactions.
 
 ## Product Thesis
 

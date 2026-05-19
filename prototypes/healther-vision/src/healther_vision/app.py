@@ -7,7 +7,7 @@ import time
 from io import BytesIO
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse, StreamingResponse
@@ -18,7 +18,6 @@ from .config import load_local_env
 from .dashboard import dashboard_html, list_runs, list_vlm_reports
 from .evaluation import event_metrics, expected_events_for_manifest
 from .models import CameraRole, Evidence, FrameAnalysis, SyntheticScenario
-from .monitor_console import monitor_console_html
 from .state import MemoryStore, VisionStateMachine
 from .synthetic import analysis_for, render_frame
 
@@ -27,12 +26,67 @@ load_local_env()
 DATA_DIR = Path("data")
 GENERATED_DIR = DATA_DIR / "generated"
 UPLOAD_DIR = DATA_DIR / "uploads"
+APP_ROOT = Path(__file__).resolve().parents[2]
+MOCKUPS_DIR = APP_ROOT / "static" / "mockups"
 
 app = FastAPI(title="Healther Vision", version="0.1.0")
 store = MemoryStore()
 machine = VisionStateMachine()
 GENERATED_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/generated", StaticFiles(directory=GENERATED_DIR), name="generated")
+if MOCKUPS_DIR.exists():
+    app.mount("/mockups", StaticFiles(directory=MOCKUPS_DIR), name="mockups")
+
+SETUP_CONFIG: dict[str, Any] = {
+    "source_type": "synthetic",
+    "source_url": "synthetic",
+    "camera_label": "Bedside Cam 1",
+    "bed_zone_polygon": [[282, 400], [998, 400], [1018, 600], [262, 600]],
+    "monitor_crop": {"enabled": True, "box": [1085, 270, 1225, 390]},
+    "iv_oxygen_crop": {"enabled": False, "box": None},
+}
+
+APP_EVENTS: list[dict[str, Any]] = [
+    {
+        "id": "evt-spo2-0714",
+        "type": "VITALS_OUT_OF_RANGE",
+        "label": "SpO2 trending down",
+        "severity": "critical",
+        "status": "needs_review",
+        "time": "07:14 AM",
+        "ago": "18m",
+        "description": "SpO2 declined from 99% to 94% over 30 minutes.",
+        "confidence": 0.94,
+        "evidence": {
+            "still": "/v0/monitor/frame.jpg?scenario=vitals_alert",
+            "clip": "/v0/monitor/stream.mjpg?source=synthetic&scenario=vitals_alert&fps=4",
+        },
+        "vlm": {
+            "summary": "Patient remains in bed. Monitor OCR shows a sustained SpO2 drop. No staff presence is visible during the decline window.",
+            "needs_human_review": True,
+        },
+    },
+    {
+        "id": "evt-no-move-0628",
+        "type": "NO_MOVEMENT_SUSTAINED",
+        "label": "No movement detected",
+        "severity": "warning",
+        "status": "unreviewed",
+        "time": "06:28 AM",
+        "ago": "1h 02m",
+        "description": "3h cumulative immobility threshold reached.",
+        "confidence": 0.9,
+        "evidence": {
+            "still": "/v0/monitor/frame.jpg?scenario=normal",
+            "clip": "/v0/monitor/stream.mjpg?source=synthetic&scenario=normal&fps=4",
+        },
+        "vlm": {
+            "summary": "Patient appears in bed with no visible staff in the room.",
+            "needs_human_review": False,
+        },
+    },
+]
+REVIEW_LOG: list[dict[str, Any]] = []
 
 
 class ScenarioRequest(BaseModel):
@@ -51,6 +105,27 @@ class ReplayRequest(ScenarioRequest):
 class VideoExtractResponse(BaseModel):
     output_dir: str
     frames: list[str]
+
+
+class ReviewRequest(BaseModel):
+    action: str
+    note: str | None = None
+    reviewer_id: str = "local-demo-user"
+
+
+class AssistantRequest(BaseModel):
+    message: str
+    room_id: str = "private-room-01"
+    event_id: str | None = None
+
+
+class SetupConfigRequest(BaseModel):
+    source_type: str = "synthetic"
+    source_url: str = "synthetic"
+    camera_label: str = "Bedside Cam 1"
+    bed_zone_polygon: list[list[float]] | None = None
+    monitor_crop: dict[str, Any] | None = None
+    iv_oxygen_crop: dict[str, Any] | None = None
 
 
 @app.get("/health")
@@ -110,7 +185,23 @@ def dashboard() -> str:
 
 @app.get("/monitor", response_class=HTMLResponse)
 def monitor() -> str:
-    return monitor_console_html()
+    return mockup_page("monitor/Aida - One-Bed Live Monitor.html", "monitor")
+
+
+@app.get("/setup", response_class=HTMLResponse)
+@app.get("/video-setup", response_class=HTMLResponse)
+def setup_page() -> str:
+    return mockup_page("setup/index.html", "setup")
+
+
+@app.get("/review", response_class=HTMLResponse)
+def review_page() -> str:
+    return mockup_page("review/Event Review.html", "review")
+
+
+@app.get("/state-reference", response_class=HTMLResponse)
+def state_reference_page() -> str:
+    return mockup_page("state-reference/Aida - State Reference.html", "state-reference")
 
 
 @app.get("/v0/monitor/state")
@@ -133,6 +224,7 @@ def monitor_state() -> dict:
         },
         "evidence": {"status": "clip buffer", "retention": "event-scoped"},
         "recent_events": [event.model_dump(mode="json") for event in events[-12:]],
+        "app_events": APP_EVENTS,
     }
 
 
@@ -146,6 +238,113 @@ def monitor_stream(
         mjpeg_stream(source=source, scenario=scenario, fps=fps),
         media_type="multipart/x-mixed-replace; boundary=frame",
     )
+
+
+@app.get("/v0/monitor/frame.jpg")
+def monitor_frame(scenario: SyntheticScenario = SyntheticScenario.NORMAL) -> StreamingResponse:
+    analysis = analysis_for(scenario, 0, 48, CameraRole.CCTV)
+    image = render_frame(
+        analysis,
+        scenario=scenario,
+        camera_role=CameraRole.CCTV,
+        frame_index=0,
+    )
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG", quality=88)
+    return StreamingResponse(BytesIO(buffer.getvalue()), media_type="image/jpeg")
+
+
+@app.get("/v0/events")
+def events() -> dict:
+    return {"ok": True, "events": APP_EVENTS}
+
+
+@app.post("/v0/events")
+def create_event(event_payload: dict[str, Any]) -> dict:
+    event = {
+        "id": event_payload.get("id") or f"evt-{timestamp_slug()}",
+        "status": "unreviewed",
+        **event_payload,
+    }
+    APP_EVENTS.insert(0, event)
+    return {"ok": True, "event": event}
+
+
+@app.get("/v0/events/{event_id}")
+def event_detail(event_id: str) -> dict:
+    return {"ok": True, "event": find_event(event_id)}
+
+
+@app.post("/v0/events/{event_id}/review")
+def review_event(event_id: str, req: ReviewRequest) -> dict:
+    event = find_event(event_id)
+    event["status"] = req.action
+    record = {
+        "event_id": event_id,
+        "action": req.action,
+        "note": req.note,
+        "reviewer_id": req.reviewer_id,
+        "reviewed_at": datetime.now(timezone.utc).isoformat(),
+    }
+    REVIEW_LOG.append(record)
+    return {"ok": True, "event": event, "review": record}
+
+
+@app.get("/v0/vitals/trend")
+def vitals_trend() -> dict:
+    return {
+        "ok": True,
+        "window": "4h",
+        "vitals": {
+            "hr": [70, 70, 71, 72, 71, 72, 72, 73, 72],
+            "bp": ["120/78", "119/76", "118/76", "118/76"],
+            "spo2": [99, 99, 98, 97, 96, 95, 94],
+            "rr": [17, 18, 18, 18, 18, 18],
+        },
+        "latest": {"hr": 72, "bp": "118/76", "spo2": 94, "rr": 18},
+        "source": "monitor_ocr",
+    }
+
+
+@app.post("/v0/assistant/chat")
+def assistant_chat(req: AssistantRequest) -> dict:
+    answer = assistant_answer(req.message)
+    return {
+        "ok": True,
+        "message": req.message,
+        "answer": answer,
+        "citations": [
+            {"label": "Vitals OCR 06:42-07:14", "event_id": "evt-spo2-0714"},
+            {"label": "Event timeline", "event_id": req.event_id or "evt-spo2-0714"},
+        ],
+        "tools_used": ["get_current_room_state", "get_event_timeline", "get_vitals_trend"],
+    }
+
+
+@app.get("/v0/setup/config")
+def get_setup_config() -> dict:
+    return {"ok": True, "config": SETUP_CONFIG}
+
+
+@app.post("/v0/setup/config")
+def save_setup_config(req: SetupConfigRequest) -> dict:
+    SETUP_CONFIG.update(req.model_dump(exclude_none=True))
+    return {"ok": True, "config": SETUP_CONFIG}
+
+
+@app.post("/v0/setup/test")
+def test_setup(payload: dict[str, Any] | None = None) -> dict:
+    source = (payload or {}).get("source_url") or SETUP_CONFIG.get("source_url") or "synthetic"
+    return {
+        "ok": True,
+        "source_url": source,
+        "status": "connected",
+        "codec": "H.264/MJPEG dev bridge",
+        "resolution": "1920x1080",
+        "fps": 24,
+        "latency_ms": 180,
+        "stream_url": "/v0/monitor/stream.mjpg?source=synthetic&scenario=normal&fps=4",
+    }
 
 
 @app.get("/v0/runs")
@@ -276,6 +475,56 @@ async def video_extract(
     out_dir = GENERATED_DIR / f"extracted-{video_path.stem}"
     frames = extract_frames(video_path, out_dir, every_seconds=every_seconds, limit=limit)
     return VideoExtractResponse(output_dir=str(out_dir), frames=[str(path) for path in frames])
+
+
+def mockup_page(relative_path: str, page: str) -> str:
+    path = MOCKUPS_DIR / relative_path
+    if not path.exists():
+        raise HTTPException(status_code=404, detail=f"mockup not found: {relative_path}")
+    html = path.read_text(encoding="utf-8")
+    bridge = f"""
+<script>
+  window.AIDA_PAGE = {json.dumps(page)};
+  window.AIDA_API_BASE = "";
+</script>
+<script src="/mockups/bridge.js"></script>
+"""
+    return html.replace("</body>", f"{bridge}</body>")
+
+
+def find_event(event_id: str) -> dict[str, Any]:
+    for event in APP_EVENTS:
+        if event["id"] == event_id:
+            return event
+    raise HTTPException(status_code=404, detail=f"event not found: {event_id}")
+
+
+def assistant_answer(message: str) -> str:
+    text = message.lower()
+    if "staff" in text or "nurse" in text or "visit" in text:
+        return (
+            "No staff presence has been recorded after 05:12 AM in the current demo timeline. "
+            "This answer is grounded in the staff log and room-state feed."
+        )
+    if "spo" in text or "oxygen" in text or "distress" in text:
+        return (
+            "SpO2 declined from 99% to 94% before the warning event. The current system treats this "
+            "as a review-required trend, not an autonomous diagnosis."
+        )
+    if "review" in text or "alert" in text:
+        return (
+            "The highest priority review item is evt-spo2-0714: SpO2 trending down, critical severity, "
+            "with monitor OCR and timeline evidence attached."
+        )
+    if "evidence" in text:
+        return (
+            "Evidence is available as a still frame and event-scoped stream/clip reference for each event. "
+            "Open the review page to label the event and attach notes."
+        )
+    return (
+        "Current room state: patient is in bed, vitals are HR 72, BP 118/76, SpO2 94, RR 18, "
+        "and there is one critical vitals trend awaiting review."
+    )
 
 
 def parse_analysis(raw: str | None) -> FrameAnalysis:

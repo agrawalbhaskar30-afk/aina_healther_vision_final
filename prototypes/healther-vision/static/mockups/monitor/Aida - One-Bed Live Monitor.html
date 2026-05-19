@@ -1,0 +1,4280 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1440, initial-scale=1" />
+  <title>Aida — Bed ICU-2 · Live Monitor</title>
+  <style id="ds-colors-and-type">
+/* =============================================================
+   Aida — Colors & Type tokens
+   Two themes (light, dark). Toggle by setting [data-theme] on the
+   root element, or by removing it and relying on prefers-color-scheme.
+   ============================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ----- Base (light is default) -------------------------------- */
+:root,
+:root[data-theme="light"] {
+  /* Surfaces */
+  --bg:              #FAFAF9;   /* stone-50    — app background */
+  --surface:         #FFFFFF;   /*              — card / panel  */
+  --surface-2:       #F5F5F4;   /* stone-100   — recessed wells */
+  --border:          #E7E5E4;   /* stone-200   — hairlines      */
+  --border-strong:   #D6D3D1;   /* stone-300   — input borders  */
+  --scrim:           rgba(0,0,0,0.4);
+
+  /* Foreground */
+  --fg-1:            #1C1917;   /* stone-900   — primary text   */
+  --fg-2:            #57534E;   /* stone-600   — secondary text */
+  --fg-3:            #A8A29E;   /* stone-400   — tertiary text  */
+  --fg-on-brand:     #FFFFFF;
+
+  /* Brand */
+  --brand:           #0F766E;   /* teal-700                     */
+  --brand-hover:     #115E59;   /* teal-800                     */
+  --brand-active:    #134E4A;   /* teal-900                     */
+  --brand-subtle:    #F0FDFA;   /* teal-50    — soft tint bg    */
+  --brand-subtle-fg: #115E59;
+  --brand-ring:      rgba(15,118,110,0.32);
+
+  /* Semantic */
+  --critical:        #E11D48;   /* rose-600  */
+  --critical-bg:     #FFF1F2;   /* rose-50   */
+  --critical-fg:     #9F1239;   /* rose-800  */
+  --warning:         #D97706;   /* amber-600 */
+  --warning-bg:      #FFFBEB;   /* amber-50  */
+  --warning-fg:      #92400E;   /* amber-800 */
+  --success:         #059669;   /* emerald-600 */
+  --success-bg:      #ECFDF5;   /* emerald-50  */
+  --success-fg:      #065F46;   /* emerald-800 */
+  --info:            #0284C7;   /* sky-600   */
+  --info-bg:         #F0F9FF;   /* sky-50    */
+  --info-fg:         #075985;   /* sky-800   */
+
+  /* Elevation */
+  --shadow-1:        0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.02);
+  --shadow-2:        0 4px 12px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+}
+
+/* ----- Dark -------------------------------------------------- */
+:root[data-theme="dark"] {
+  --bg:              #0A0A09;
+  --surface:         #1C1C1B;
+  --surface-2:       #232220;
+  --border:          #292524;   /* stone-800 */
+  --border-strong:   #44403C;   /* stone-700 */
+  --scrim:           rgba(0,0,0,0.6);
+
+  --fg-1:            #F5F5F4;   /* stone-100 */
+  --fg-2:            #A8A29E;   /* stone-400 */
+  --fg-3:            #57534E;   /* stone-600 */
+  --fg-on-brand:     #0A0A09;
+
+  --brand:           #2DD4BF;   /* teal-400 */
+  --brand-hover:     #5EEAD4;   /* teal-300 */
+  --brand-active:    #99F6E4;   /* teal-200 */
+  --brand-subtle:    rgba(45,212,191,0.10);
+  --brand-subtle-fg: #5EEAD4;
+  --brand-ring:      rgba(45,212,191,0.40);
+
+  --critical:        #F43F5E;   /* rose-500   */
+  --critical-bg:     rgba(244,63,94,0.10);
+  --critical-fg:     #FDA4AF;   /* rose-300   */
+  --warning:         #F59E0B;
+  --warning-bg:      rgba(245,158,11,0.10);
+  --warning-fg:      #FCD34D;
+  --success:         #10B981;
+  --success-bg:      rgba(16,185,129,0.10);
+  --success-fg:      #6EE7B7;
+  --info:            #0EA5E9;
+  --info-bg:         rgba(14,165,233,0.10);
+  --info-fg:         #7DD3FC;
+
+  --shadow-1:        0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.04);
+  --shadow-2:        0 4px 16px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.4);
+}
+
+/* ----- Typography -------------------------------------------- */
+:root {
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Size / weight / leading */
+  --display-size:  48px;  --display-line: 1.05;  --display-weight: 500;
+  --h1-size:       24px;  --h1-line:      1.25;  --h1-weight:      600;
+  --h2-size:       18px;  --h2-line:      1.35;  --h2-weight:      600;
+  --body-size:     14px;  --body-line:    1.5;   --body-weight:    400;
+  --small-size:    12px;  --small-line:   1.4;   --small-weight:   500;
+  --tiny-size:     11px;  --tiny-line:    1.3;   --tiny-weight:    400;
+
+  /* Spacing — 8pt grid */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-full: 9999px;
+}
+
+/* ----- Semantic element styles ------------------------------- */
+html { font-family: var(--font-sans); color: var(--fg-1); background: var(--bg); }
+body { font-size: var(--body-size); line-height: var(--body-line); }
+
+h1 { font-size: var(--h1-size); line-height: var(--h1-line); font-weight: var(--h1-weight); letter-spacing: -0.011em; color: var(--fg-1); }
+h2 { font-size: var(--h2-size); line-height: var(--h2-line); font-weight: var(--h2-weight); letter-spacing: -0.006em; color: var(--fg-1); }
+p, li { font-size: var(--body-size); line-height: var(--body-line); color: var(--fg-2); }
+small { font-size: var(--small-size); font-weight: var(--small-weight); color: var(--fg-2); }
+code, kbd, .mono { font-family: var(--font-mono); }
+
+.display {
+  font-family: var(--font-mono);
+  font-size: var(--display-size);
+  line-height: var(--display-line);
+  font-weight: var(--display-weight);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--fg-1);
+}
+
+.tabular { font-variant-numeric: tabular-nums; }
+
+.label-caps {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+
+/* Focus ring — keyboard only */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: var(--radius-md);
+}
+
+  </style>
+  <style id="ds-styles">
+/* =============================================================
+   Aida — design-system page styles.
+   Layers on top of colors_and_type.css.
+   ============================================================= */
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg-1);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 160ms ease-out, color 160ms ease-out;
+}
+button { font-family: inherit; cursor: pointer; }
+input, select, textarea { font-family: inherit; }
+
+/* ----- Page chrome ------------------------------------------- */
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 64px 48px 96px;
+}
+@media (max-width: 720px) {
+  .page { padding: 32px 20px 64px; }
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 64px;
+}
+.page-header .left { display: flex; gap: 16px; align-items: center; }
+.page-header h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.014em;
+}
+.page-header .tagline {
+  margin: 4px 0 0;
+  color: var(--fg-2);
+  font-size: 14px;
+}
+
+.section { margin-bottom: 80px; }
+.section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.section-head .num {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--fg-3);
+  font-weight: 500;
+  min-width: 28px;
+}
+.section-head h2 { margin: 0; }
+.section-head .desc {
+  margin-left: auto;
+  color: var(--fg-2);
+  font-size: 13px;
+  max-width: 420px;
+  text-align: right;
+}
+
+.subsection { margin-top: 32px; }
+.subsection-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+  margin: 0 0 16px;
+}
+
+/* ----- Cards & swatches -------------------------------------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  padding: 24px;
+}
+.well {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+}
+
+.grid { display: grid; gap: 12px; }
+.grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.grid-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 800px) {
+  .grid-4, .grid-5 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Color swatch */
+.swatch {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface);
+}
+.swatch .chip {
+  height: 80px;
+  border-bottom: 1px solid var(--border);
+}
+.swatch .meta {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.swatch .name { font-size: 12px; font-weight: 600; color: var(--fg-1); }
+.swatch .hex  { font-family: var(--font-mono); font-size: 11px; color: var(--fg-2); }
+
+/* Type spec */
+.type-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 24px;
+  align-items: baseline;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+.type-row:last-child { border-bottom: 0; }
+.type-row .spec {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-2);
+  line-height: 1.5;
+}
+.type-row .spec .nm { display: block; color: var(--fg-1); font-weight: 600; margin-bottom: 4px; font-family: var(--font-sans); font-size: 13px; }
+
+/* Spacing tokens */
+.spacing-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 80px;
+  gap: 16px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.spacing-row:last-child { border-bottom: 0; }
+.spacing-row .name { font-family: var(--font-mono); font-size: 12px; color: var(--fg-1); }
+.spacing-row .bar { height: 8px; background: var(--brand-subtle); border-radius: 2px; }
+.spacing-row .px { font-family: var(--font-mono); font-size: 12px; color: var(--fg-2); text-align: right; }
+
+/* Radius tokens */
+.radius-tile {
+  height: 96px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.radius-tile .nm { font-family: var(--font-mono); font-size: 12px; color: var(--fg-1); }
+.radius-tile .px { font-family: var(--font-mono); font-size: 11px; color: var(--fg-2); }
+
+/* ----- Buttons ----------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--fg-1);
+  white-space: nowrap;
+  transition: background-color 100ms ease-out, color 100ms ease-out, border-color 100ms ease-out;
+  user-select: none;
+}
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn.sm { height: 28px; padding: 0 10px; font-size: 12px; }
+.btn.md { height: 32px; padding: 0 12px; font-size: 13px; }
+.btn.lg { height: 40px; padding: 0 16px; font-size: 14px; }
+
+.btn.primary {
+  background: var(--brand);
+  color: var(--fg-on-brand);
+  border-color: var(--brand);
+}
+.btn.primary:hover:not(:disabled) { background: var(--brand-hover); border-color: var(--brand-hover); }
+.btn.primary:active:not(:disabled) { background: var(--brand-active); border-color: var(--brand-active); }
+
+.btn.secondary {
+  background: var(--surface);
+  border-color: var(--border-strong);
+  color: var(--fg-1);
+}
+.btn.secondary:hover:not(:disabled) { background: var(--surface-2); }
+
+.btn.tertiary { color: var(--fg-2); padding: 0 8px; }
+.btn.tertiary:hover:not(:disabled) { color: var(--fg-1); background: var(--surface-2); }
+
+.btn.danger {
+  background: var(--critical);
+  color: #fff;
+  border-color: var(--critical);
+}
+.btn.danger:hover:not(:disabled) { filter: brightness(0.92); }
+
+.btn.icon { padding: 0; width: var(--btn-h, 32px); }
+.btn.icon.sm { width: 28px; }
+.btn.icon.md { width: 32px; }
+.btn.icon.lg { width: 40px; }
+
+/* ----- Status & badges --------------------------------------- */
+.dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.dot.success { background: var(--success); }
+.dot.warning { background: var(--warning); }
+.dot.critical { background: var(--critical); }
+.dot.gray { background: var(--fg-3); }
+.dot.brand { background: var(--brand); }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: var(--radius-full);
+  padding: 3px 10px 3px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  background: var(--surface-2);
+  color: var(--fg-1);
+  border: 1px solid var(--border);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.tag.info     { background: var(--info-bg);     color: var(--info-fg); }
+.tag.warning  { background: var(--warning-bg);  color: var(--warning-fg); }
+.tag.critical { background: var(--critical-bg); color: var(--critical-fg); }
+.tag.success  { background: var(--success-bg);  color: var(--success-fg); }
+.tag.neutral  { background: var(--surface-2);   color: var(--fg-2); }
+
+/* ----- Inputs ------------------------------------------------ */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-1);
+}
+.field-help { font-size: 11px; color: var(--fg-2); }
+.field-error { font-size: 11px; color: var(--critical-fg); }
+
+.input, .select, .textarea {
+  height: 32px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 0 10px;
+  font-size: 13px;
+  color: var(--fg-1);
+  outline: none;
+  transition: border-color 100ms ease-out, box-shadow 100ms ease-out;
+  width: 100%;
+}
+.textarea { height: auto; padding: 8px 10px; min-height: 80px; resize: vertical; line-height: 1.5; }
+.input::placeholder, .textarea::placeholder { color: var(--fg-3); }
+.input:hover, .select:hover, .textarea:hover { border-color: var(--fg-3); }
+.input:focus, .select:focus, .textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-ring); }
+.input.error { border-color: var(--critical); }
+.input.error:focus { box-shadow: 0 0 0 3px rgba(225,29,72,0.18); }
+
+.input-icon-wrap { position: relative; }
+.input-icon-wrap .leading-icon {
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  color: var(--fg-3); pointer-events: none;
+}
+.input-icon-wrap .input { padding-left: 32px; }
+
+/* Toggle */
+.toggle {
+  --w: 32px; --h: 18px;
+  position: relative; display: inline-block;
+  width: var(--w); height: var(--h);
+  border-radius: var(--radius-full);
+  background: var(--border-strong);
+  transition: background-color 120ms ease-out;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.toggle::after {
+  content: "";
+  position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px;
+  border-radius: 50%; background: #fff;
+  transition: transform 120ms ease-out;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+.toggle.on { background: var(--brand); }
+.toggle.on::after { transform: translateX(14px); }
+.toggle.disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Checkbox */
+.checkbox {
+  width: 16px; height: 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 100ms ease-out, border-color 100ms ease-out;
+}
+.checkbox.on {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+.checkbox svg { opacity: 0; }
+.checkbox.on svg { opacity: 1; }
+
+/* ----- Panels with header ------------------------------------ */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.panel-header .title { font-size: 13px; font-weight: 600; color: var(--fg-1); }
+.panel-body { padding: 16px; }
+
+/* ----- Patient header strip ---------------------------------- */
+.patient-strip {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 14px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+}
+.patient-strip .name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--fg-1);
+  min-width: 140px;
+  white-space: nowrap;
+}
+.patient-strip .meta {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+.patient-strip .meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.patient-strip .k {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  white-space: nowrap;
+  line-height: 1;
+}
+.patient-strip .v {
+  font-size: 13px;
+  color: var(--fg-1);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+.patient-strip .v-text { font-family: var(--font-sans); white-space: normal; }
+.patient-strip .sep { width: 1px; height: 28px; background: var(--border); flex-shrink: 0; }
+.patient-strip .right { margin-left: auto; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+
+/* ----- Vitals card ------------------------------------------- */
+.vital-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-1);
+}
+.vital-card .vitals-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+  margin-bottom: 6px;
+  position: relative;
+  z-index: 1;
+}
+.vital-card .vitals-value {
+  display: flex; align-items: baseline; gap: 6px;
+  position: relative;
+  z-index: 1;
+}
+.vital-card .vitals-num {
+  font-family: var(--font-mono);
+  font-size: 40px;
+  line-height: 1;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--fg-1);
+}
+.vital-card .vitals-unit { font-size: 12px; color: var(--fg-2); }
+.vital-card .vitals-trend { margin-left: auto; font-size: 11px; color: var(--fg-2); display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); }
+.vital-card .vitals-trend.up { color: var(--warning-fg); }
+.vital-card .vitals-trend.down { color: var(--info-fg); }
+.vital-card .vitals-trend.flat { color: var(--fg-3); }
+.vital-card .spark {
+  position: absolute;
+  right: 0; bottom: 0;
+  width: 70%; height: 50%;
+  opacity: 0.35;
+  pointer-events: none;
+}
+.vital-card.alert .vitals-num { color: var(--critical); }
+.vital-card.alert { border-color: var(--critical); }
+
+/* ----- Event timeline ---------------------------------------- */
+.timeline {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px 28px;
+  box-shadow: var(--shadow-1);
+}
+.timeline .axis {
+  position: relative;
+  height: 1px;
+  background: var(--border);
+  margin-top: 32px;
+}
+.timeline .tick {
+  position: absolute;
+  top: -6px;
+  width: 1px;
+  height: 6px;
+  background: var(--border-strong);
+}
+.timeline .tick-label {
+  position: absolute;
+  top: -24px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  transform: translateX(-50%);
+}
+.timeline .marker {
+  position: absolute;
+  top: -5px;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+  transform: translateX(-50%);
+  cursor: pointer;
+  transition: transform 100ms ease-out;
+}
+.timeline .marker:hover { transform: translateX(-50%) scale(1.3); }
+.timeline .marker.large { width: 14px; height: 14px; top: -7px; }
+.timeline .marker.info     { background: var(--info); }
+.timeline .marker.warning  { background: var(--warning); }
+.timeline .marker.critical { background: var(--critical); }
+.timeline .marker.success  { background: var(--success); }
+.timeline .now {
+  position: absolute;
+  top: -24px;
+  bottom: -8px;
+  width: 1px;
+  background: var(--brand);
+  transform: translateX(-50%);
+}
+.timeline .now::before {
+  content: "now";
+  position: absolute;
+  top: -16px;
+  left: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--brand);
+}
+
+/* ----- Alert banner ------------------------------------------ */
+.banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid;
+  font-size: 13px;
+}
+.banner .body { flex: 1; }
+.banner .ttl { font-weight: 600; color: var(--fg-1); margin-bottom: 2px; }
+.banner .msg { color: var(--fg-2); }
+.banner.subtle { background: var(--warning-bg); border-color: color-mix(in oklab, var(--warning) 30%, transparent); }
+.banner.subtle .icon { color: var(--warning); }
+.banner.prominent {
+  background: var(--critical-bg);
+  border-color: color-mix(in oklab, var(--critical) 50%, transparent);
+}
+.banner.prominent .icon { color: var(--critical); }
+.banner.prominent .ttl { color: var(--critical-fg); }
+
+/* ----- Assistant chat bubble --------------------------------- */
+.chat-bubble {
+  display: flex;
+  gap: 12px;
+  max-width: 540px;
+}
+.chat-avatar {
+  width: 28px; height: 28px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  color: var(--brand);
+}
+.chat-body {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  border-top-left-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--fg-1);
+  line-height: 1.55;
+}
+.chat-body .who {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--brand);
+  margin-bottom: 4px;
+}
+.chat-cites {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;
+}
+.cite-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: color 100ms ease-out, border-color 100ms ease-out;
+}
+.cite-chip:hover { color: var(--brand); border-color: var(--brand); }
+
+/* ----- Keyboard shortcut hints ------------------------------- */
+.kbd-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 13px; color: var(--fg-2); }
+.kbd-row .label { color: var(--fg-1); }
+.kbd-row .keys { margin-left: auto; display: inline-flex; gap: 4px; }
+kbd.key {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fg-2);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+  min-width: 18px;
+  text-align: center;
+  display: inline-block;
+}
+
+/* ----- Brand mark sizes -------------------------------------- */
+.mark-row { display: flex; align-items: flex-end; gap: 32px; padding: 24px 0; }
+.mark-tile { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.mark-tile .px { font-family: var(--font-mono); font-size: 10px; color: var(--fg-3); }
+.mark-tile svg { display: block; color: var(--brand); }
+
+/* ----- Footer ------------------------------------------------ */
+.foot {
+  margin-top: 96px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--fg-3);
+  font-size: 12px;
+  font-family: var(--font-mono);
+}
+
+  </style>
+  <style id="app-styles">
+/* =============================================================
+   Aida — One-Bed Live Monitor
+   App-level layout on top of colors_and_type.css + ds.css.
+   ============================================================= */
+
+html, body, #root { height: 100%; }
+body {
+  min-width: 1280px;
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* ---------- Page shell ---------- */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* ---------- Top bar ---------- */
+.top-bar {
+  height: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.top-bar .mark { color: var(--brand); display: inline-flex; }
+.top-bar .crumbs {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--fg-2);
+}
+.top-bar .crumbs .seg { color: var(--fg-2); transition: color 100ms ease-out; cursor: pointer; }
+.top-bar .crumbs .seg:hover { color: var(--fg-1); }
+.top-bar .crumbs .seg.current { color: var(--fg-1); font-weight: 500; }
+.top-bar .crumbs .slash { color: var(--fg-3); font-family: var(--font-mono); font-size: 12px; }
+
+.top-bar .right { margin-left: auto; display: inline-flex; align-items: center; gap: 12px; }
+.top-bar .live-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 10px;
+  border-radius: var(--radius-full);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 12px; color: var(--fg-1);
+  font-family: var(--font-mono);
+}
+.top-bar .live-pill .pulse {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--success);
+  position: relative;
+}
+.top-bar .live-pill .pulse::after {
+  content: "";
+  position: absolute; inset: -3px;
+  border-radius: 50%;
+  border: 2px solid var(--success);
+  opacity: 0;
+  animation: live-pulse 2.4s ease-out infinite;
+}
+@keyframes live-pulse {
+  0%   { opacity: 0.6; transform: scale(0.6); }
+  60%  { opacity: 0; transform: scale(1.6); }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+
+.top-bar .icon-btn {
+  width: 32px; height: 32px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--fg-2);
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background-color 100ms ease-out, color 100ms ease-out, border-color 100ms ease-out;
+}
+.top-bar .icon-btn:hover { background: var(--surface-2); color: var(--fg-1); border-color: var(--border); }
+
+.avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: var(--fg-on-brand);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ---------- Patient strip ---------- */
+.p-strip {
+  height: 64px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 20px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.p-strip .ident { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex-shrink: 0; }
+.p-strip .ident .name {
+  font-size: 16px; font-weight: 600; color: var(--fg-1);
+  letter-spacing: -0.011em; line-height: 1.2;
+}
+.p-strip .ident .meta {
+  font-size: 12px; color: var(--fg-2); line-height: 1.2;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.p-strip .ident .meta .dot-sep { color: var(--fg-3); margin: 0 6px; }
+.p-strip .spacer { flex: 1; }
+
+.status-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 32px; padding: 0 14px;
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  font-size: 13px; font-weight: 500; color: var(--fg-1);
+  cursor: pointer;
+  transition: all 100ms ease-out;
+}
+.status-pill:hover { background: var(--surface-2); }
+.status-pill .dot { width: 8px; height: 8px; border-radius: 50%; }
+.status-pill.tone-success .dot { background: var(--success); }
+.status-pill.tone-warning .dot { background: var(--warning); }
+.status-pill.tone-critical .dot { background: var(--critical); }
+.status-pill.tone-warning  { border-color: color-mix(in oklab, var(--warning) 40%, transparent); background: var(--warning-bg); color: var(--warning-fg); }
+.status-pill.tone-critical { border-color: color-mix(in oklab, var(--critical) 50%, transparent); background: var(--critical-bg); color: var(--critical-fg); }
+.status-pill .caret { color: var(--fg-3); margin-left: 2px; display: inline-flex; }
+
+.p-strip .code-status {
+  display: inline-flex; flex-direction: column; gap: 2px;
+  align-items: flex-end;
+  margin-right: 4px;
+}
+.p-strip .code-status .k {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--fg-3); line-height: 1;
+}
+.p-strip .code-status .v {
+  font-size: 12px; color: var(--fg-1); font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums; line-height: 1.2;
+}
+
+/* ---------- 3-column body ---------- */
+.body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) minmax(560px, 1.7fr) minmax(340px, 1fr);
+  gap: 12px;
+  padding: 12px;
+  min-height: 0;
+  overflow: hidden;
+}
+.body.aida-closed {
+  grid-template-columns: minmax(300px, 1fr) minmax(560px, 1.7fr) 36px;
+}
+
+.col { display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; overflow: hidden; }
+.col.left { }
+.col.center { }
+.col.right { min-height: 0; }
+
+/* ---------- Generic mini-card (left rail) ---------- */
+.mini-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  box-shadow: var(--shadow-1);
+}
+.mini-card .lbl {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--fg-3);
+  margin-bottom: 6px;
+  display: flex; align-items: center; gap: 6px;
+}
+.mini-card .lbl .count {
+  font-family: var(--font-mono); color: var(--fg-2);
+  font-weight: 500; letter-spacing: 0;
+}
+.mini-card .row {
+  display: flex; align-items: center; gap: 10px;
+}
+.mini-card .row .ico {
+  width: 28px; height: 28px;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.mini-card .row .ico.tone-success { background: var(--success-bg); color: var(--success); }
+.mini-card .row .ico.tone-warning { background: var(--warning-bg); color: var(--warning); }
+.mini-card .row .ico.tone-critical{ background: var(--critical-bg);color: var(--critical); }
+.mini-card .row .ico.tone-info    { background: var(--info-bg);   color: var(--info); }
+.mini-card .row .ico.tone-neutral { background: var(--surface-2); color: var(--fg-2); }
+.mini-card .row .txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.mini-card .row .txt .state {
+  font-size: 14px; font-weight: 500; color: var(--fg-1); line-height: 1.2;
+}
+.mini-card .row .txt .meta {
+  font-size: 11px; color: var(--fg-2); line-height: 1.2;
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Bed + Staff combined card ---------- */
+.state-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+.state-pair .cell {
+  padding: 10px 14px;
+  display: flex; flex-direction: column; gap: 6px;
+  min-width: 0;
+}
+.state-pair .cell + .cell { border-left: 1px solid var(--border); }
+.state-pair .lbl {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--fg-3);
+  line-height: 1;
+}
+.state-pair .row {
+  display: flex; align-items: center; gap: 8px;
+  min-width: 0;
+}
+.state-pair .ico {
+  width: 24px; height: 24px;
+  border-radius: var(--radius-sm);
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.state-pair .ico.tone-success { background: var(--success-bg); color: var(--success); }
+.state-pair .ico.tone-warning { background: var(--warning-bg); color: var(--warning); }
+.state-pair .ico.tone-critical{ background: var(--critical-bg);color: var(--critical); }
+.state-pair .ico.tone-neutral { background: var(--surface-2); color: var(--fg-2); }
+.state-pair .txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.state-pair .state {
+  font-size: 13px; font-weight: 500; color: var(--fg-1); line-height: 1.2;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.state-pair .meta {
+  font-size: 10.5px; color: var(--fg-3); line-height: 1.2;
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ---------- Vitals 2x2 ---------- */
+.vitals-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.vital-mini {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 8px 12px 8px 12px;
+  overflow: hidden;
+  min-height: 78px;
+  box-shadow: var(--shadow-1);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto auto;
+  column-gap: 8px;
+  row-gap: 2px;
+  align-items: center;
+}
+.vital-mini.warn { border-color: color-mix(in oklab, var(--warning) 50%, var(--border)); }
+.vital-mini .v-lbl {
+  grid-column: 1 / -1;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--fg-2);
+  display: flex; align-items: center; gap: 4px;
+}
+.vital-mini .v-lbl .trend { color: var(--fg-3); display: inline-flex; }
+.vital-mini.warn .v-lbl .trend { color: var(--warning); }
+.vital-mini .v-val {
+  grid-column: 1 / 2;
+  grid-row: 2 / 3;
+  display: flex; align-items: baseline; gap: 4px;
+}
+.vital-mini .v-num {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  line-height: 1.05;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--fg-1);
+  white-space: nowrap;
+}
+.vital-mini .v-num .slash {
+  color: var(--fg-3);
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  font-weight: 400;
+  font-style: italic;
+  display: inline-block;
+  transform: skewX(-18deg);
+  margin: 0 1px;
+  position: relative;
+  bottom: 2px;
+}
+.vital-mini .v-unit { font-size: 11px; color: var(--fg-2); font-family: var(--font-sans); }
+.vital-mini .v-foot {
+  grid-column: 1 / -1;
+  grid-row: 3 / 4;
+  font-size: 10px;
+  color: var(--fg-3);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vital-mini .v-spark {
+  grid-column: 2 / 3;
+  grid-row: 2 / 3;
+  width: 64px;
+  height: 28px;
+  opacity: 0.55;
+  pointer-events: none;
+  align-self: center;
+  display: block;
+}
+.vital-mini.warn .v-spark { opacity: 0.7; }
+
+/* ---------- Active alerts ---------- */
+.alerts-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  flex: 1;
+  min-height: 0;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.alerts-card .head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.alerts-card .head .ttl {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--fg-3);
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.alerts-card .head .count {
+  font-family: var(--font-mono);
+  color: var(--fg-1); font-weight: 500;
+  font-size: 11px;
+}
+.alerts-card .head .clear {
+  font-size: 11px; color: var(--fg-2); cursor: pointer; background: none;
+  border: none; padding: 4px 6px; border-radius: var(--radius-sm);
+}
+.alerts-card .head .clear:hover { color: var(--fg-1); background: var(--surface-2); }
+.alerts-card .list {
+  display: flex; flex-direction: column; gap: 6px;
+  overflow-y: auto; min-height: 0;
+  padding: 8px 10px 10px;
+}
+.alert-row {
+  position: relative;
+  padding: 8px 10px 8px 14px;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  display: flex; flex-direction: column; gap: 4px;
+  overflow: hidden;
+}
+.alert-row .stripe {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px;
+}
+.alert-row.tone-warning  .stripe { background: var(--warning); }
+.alert-row.tone-critical .stripe { background: var(--critical); }
+.alert-row .top {
+  display: flex; align-items: flex-start; gap: 6px;
+  min-width: 0;
+}
+.alert-row .icn {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.alert-row.tone-warning  .icn { color: var(--warning); }
+.alert-row.tone-critical .icn { color: var(--critical); }
+.alert-row .msg {
+  font-size: 12.5px; color: var(--fg-1); line-height: 1.35;
+  min-width: 0;
+  flex: 1;
+}
+.alert-row .bot {
+  display: flex; align-items: center; gap: 8px;
+  padding-left: 22px;
+}
+.alert-row .time {
+  font-size: 10.5px;
+  color: var(--fg-3);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.alert-row .bot .spacer { flex: 1; }
+.alert-row .ghost-btn {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--fg-2);
+  background: transparent;
+  border: none;
+  padding: 2px 6px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color 100ms ease-out, background 100ms ease-out;
+}
+.alert-row .ghost-btn:hover { color: var(--brand); background: var(--brand-subtle); }
+.alert-row .x-btn {
+  background: transparent;
+  border: none;
+  color: var(--fg-3);
+  width: 22px; height: 22px;
+  border-radius: var(--radius-sm);
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.alert-row .x-btn:hover { color: var(--fg-1); background: var(--surface); }
+.alerts-empty {
+  padding: 32px 16px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--fg-3);
+}
+
+/* ---------- Video feed ---------- */
+.video-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-1);
+  display: flex; flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+}
+.video-stage {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  background: #0b1419;
+  overflow: hidden;
+  user-select: none;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 100%;
+}
+.video-stage svg.scene { display: block; width: 100%; height: 100%; }
+
+/* Overlays */
+.vid-overlay { position: absolute; inset: 0; pointer-events: none; }
+.vid-overlay svg { width: 100%; height: 100%; display: block; }
+.vid-overlay .clickable { pointer-events: auto; }
+
+.vid-tl {
+  position: absolute; top: 12px; left: 12px;
+  pointer-events: auto;
+}
+.vid-event-toast {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 8px 10px 8px 12px;
+  background: rgba(20, 20, 18, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  color: #f5f5f4;
+  font-size: 12px;
+  font-weight: 500;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  max-width: 360px;
+}
+.vid-event-toast .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #f59e0b;
+  flex-shrink: 0;
+}
+.vid-event-toast .x {
+  background: transparent; border: none; color: #a8a29e;
+  width: 18px; height: 18px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm); cursor: pointer;
+  margin-left: 4px;
+  transition: color 100ms ease-out, background-color 100ms ease-out;
+}
+.vid-event-toast .x:hover { color: #fff; background: rgba(255,255,255,0.08); }
+
+.vid-tr {
+  position: absolute; top: 12px; right: 12px;
+  pointer-events: auto;
+}
+.cam-dropdown {
+  position: relative;
+}
+.cam-trigger {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 32px; padding: 0 10px;
+  background: rgba(20, 20, 18, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  color: #f5f5f4;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.cam-trigger:hover { background: rgba(20, 20, 18, 0.92); }
+.cam-trigger .cam-ico { color: var(--brand); }
+.cam-menu {
+  position: absolute; top: 36px; right: 0;
+  min-width: 220px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-2);
+  padding: 4px;
+  z-index: 10;
+}
+.cam-menu .item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  color: var(--fg-1);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  width: 100%;
+  background: none; border: none; text-align: left;
+}
+.cam-menu .item:hover { background: var(--surface-2); }
+.cam-menu .item.active { color: var(--brand); }
+.cam-menu .item.active .check { color: var(--brand); }
+.cam-menu .item .check { color: transparent; }
+.cam-menu .sep { height: 1px; background: var(--border); margin: 4px 0; }
+.cam-menu .group {
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--fg-3); padding: 8px 10px 4px;
+}
+
+.vid-bl {
+  position: absolute; bottom: 12px; left: 12px;
+  pointer-events: auto;
+}
+.live-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 5px 10px;
+  background: rgba(20, 20, 18, 0.78);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: rgba(245, 245, 244, 0.9);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  letter-spacing: 0.02em;
+}
+.live-badge .rec {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--critical);
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.7);
+  animation: rec-pulse 2.2s ease-in-out infinite;
+}
+@keyframes rec-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+.vid-br {
+  position: absolute; bottom: 12px; right: 12px;
+  pointer-events: auto;
+  display: flex; gap: 6px;
+}
+.vid-iconbtn {
+  width: 30px; height: 30px;
+  border-radius: var(--radius-md);
+  background: rgba(20, 20, 18, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #f5f5f4;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.vid-iconbtn:hover { background: rgba(20, 20, 18, 0.92); }
+
+/* Overlay labels on SVG */
+.ov-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  fill: #f0fdfa;
+  paint-order: stroke;
+  stroke: rgba(11, 20, 25, 0.75);
+  stroke-width: 3px;
+}
+.ov-label-bg {
+  fill: rgba(15, 118, 110, 0.92);
+}
+.ov-label-bg.amber { fill: rgba(217, 119, 6, 0.92); }
+
+/* ---------- Timeline (swim-lane) ---------- */
+.tl-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  box-shadow: var(--shadow-1);
+  flex-shrink: 0;
+  display: flex; flex-direction: column;
+  gap: 10px;
+}
+.tl-head {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.tl-head .tl-title { display: inline-flex; align-items: baseline; gap: 10px; }
+.tl-head .tl-title .ttl {
+  font-size: 13px; font-weight: 600; color: var(--fg-1);
+  letter-spacing: -0.005em;
+}
+.tl-head .tl-title .rng {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--fg-3);
+  font-variant-numeric: tabular-nums;
+}
+.tl-legend {
+  display: inline-flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.tl-legend .leg {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px;
+  color: var(--fg-2);
+  cursor: pointer;
+  transition: opacity 100ms ease-out;
+}
+.tl-legend .leg.muted { opacity: 0.35; }
+.tl-legend .leg .leg-line { width: 12px; height: 2px; border-radius: 1px; }
+.tl-legend .leg .leg-lbl {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  font-size: 10px;
+  color: var(--fg-2);
+  text-transform: uppercase;
+}
+.tl-legend .leg .leg-val {
+  font-family: var(--font-mono);
+  color: var(--fg-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Grid layout: [label-gutter | chart-area | right-pad] */
+.tl-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: 72px 1fr 24px;
+  grid-template-rows: 22px 22px 22px 56px 18px;
+  row-gap: 2px;
+  column-gap: 0;
+}
+.tl-label {
+  grid-column: 1 / 2;
+  display: flex; align-items: center; gap: 6px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  padding-right: 10px;
+}
+.tl-label .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.tl-label.critical { color: var(--critical); }
+.tl-label.critical .dot { background: var(--critical); }
+.tl-label.warning  { color: var(--warning); }
+.tl-label.warning  .dot { background: var(--warning); }
+.tl-label.info     { color: var(--info); }
+.tl-label.info     .dot { background: var(--info); }
+.tl-label.vitals   { color: var(--fg-2); }
+.tl-label.vitals   .dot { background: var(--fg-2); }
+
+.tl-track {
+  grid-column: 2 / 3;
+  position: relative;
+  height: 100%;
+}
+.tl-track .baseline {
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--border);
+  opacity: 0.55;
+  transform: translateY(-0.5px);
+}
+.tl-track.vitals-track { padding: 4px 0; }
+.tl-track.vitals-track .vitals-svg {
+  width: 100%; height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+/* Lane row tint — very faint band so critical/warning rows feel earned */
+.tl-row-band {
+  position: absolute;
+  left: 0; right: 0;
+  pointer-events: none;
+  border-radius: 2px;
+}
+.tl-row-band.critical { background: var(--critical-bg); opacity: 0.35; }
+.tl-row-band.warning  { background: var(--warning-bg);  opacity: 0.35; }
+
+/* Lane markers */
+.tl-mark {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 11px; height: 11px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+  cursor: pointer;
+  pointer-events: auto;
+  background: var(--info);
+  transition: transform 100ms ease-out;
+  z-index: 4;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+}
+.tl-mark.info     { background: var(--info); }
+.tl-mark.warning  { background: var(--warning); }
+.tl-mark.critical { background: var(--critical); }
+.tl-mark.success  { background: var(--success); }
+.tl-mark.big      { width: 14px; height: 14px; border-width: 2.5px; }
+.tl-mark.dim      { opacity: 0.18; }
+.tl-mark:hover {
+  transform: translate(-50%, -50%) scale(1.35);
+  z-index: 6;
+}
+.tl-mark.pulse::after {
+  content: "";
+  position: absolute; inset: -4px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  opacity: 0.7;
+  animation: mark-pulse 1.8s ease-out infinite;
+}
+.tl-mark.critical.pulse { color: var(--critical); }
+.tl-mark.warning.pulse  { color: var(--warning); }
+@keyframes mark-pulse {
+  0%   { transform: scale(0.6); opacity: 0.7; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+
+.tl-tip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--fg-1);
+  color: var(--bg);
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  font-size: 11.5px;
+  white-space: nowrap;
+  box-shadow: var(--shadow-2);
+  pointer-events: none;
+  display: flex; flex-direction: column; gap: 2px;
+  z-index: 20;
+  min-width: 160px;
+  max-width: 280px;
+  text-align: left;
+}
+.tl-tip .t-lbl { font-weight: 600; color: var(--bg); }
+.tl-tip .t-time {
+  font-family: var(--font-mono); font-size: 10px;
+  opacity: 0.7;
+}
+.tl-tip .t-desc {
+  font-size: 11px;
+  opacity: 0.8;
+  white-space: normal;
+}
+.tl-tip::after {
+  content: "";
+  position: absolute;
+  bottom: -4px; left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 8px; height: 8px;
+  background: var(--fg-1);
+}
+
+/* Now line — spans all lane rows + axis row */
+.tl-now {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  background: var(--brand);
+  pointer-events: none;
+  z-index: 3;
+}
+.tl-now-lbl {
+  position: absolute;
+  top: -4px;
+  right: -3px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--brand);
+  letter-spacing: 0.04em;
+  background: var(--surface);
+  padding: 0 4px;
+  transform: translateX(0);
+}
+.tl-now-pulse {
+  position: absolute;
+  top: 11px;
+  left: 0;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--brand);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 0 color-mix(in oklab, var(--brand) 60%, transparent);
+  animation: now-pulse 2.4s ease-out infinite;
+}
+@keyframes now-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--brand) 60%, transparent); }
+  50%      { box-shadow: 0 0 0 7px transparent; }
+}
+
+/* Time axis row */
+.tl-axis {
+  grid-column: 2 / 3;
+  position: relative;
+  border-top: 1px solid var(--border);
+  margin-top: 2px;
+}
+.tl-axis .tick {
+  position: absolute;
+  top: 5px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.tl-axis .tick.first { transform: translateX(0); }
+.tl-axis .tick.last  { transform: translateX(-100%); }
+.tl-axis .tick-mark {
+  position: absolute;
+  top: -3px;
+  width: 1px; height: 4px;
+  background: var(--border-strong);
+  transform: translateX(-50%);
+}
+
+.tl-filters {
+  display: flex; gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.tl-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 10px;
+  border-radius: var(--radius-full);
+  font-size: 11.5px;
+  font-weight: 500;
+  background: var(--surface-2);
+  border: 1px solid transparent;
+  color: var(--fg-2);
+  cursor: pointer;
+  transition: all 100ms ease-out;
+}
+.tl-chip .ch-dot { width: 6px; height: 6px; border-radius: 50%; }
+.tl-chip .ch-dot.info     { background: var(--info); }
+.tl-chip .ch-dot.warning  { background: var(--warning); }
+.tl-chip .ch-dot.critical { background: var(--critical); }
+.tl-chip .ch-count {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-3);
+  font-size: 11px;
+}
+.tl-chip:hover { color: var(--fg-1); border-color: var(--border); }
+.tl-chip.active {
+  background: var(--brand-subtle);
+  color: var(--brand-subtle-fg);
+  border-color: color-mix(in oklab, var(--brand) 30%, transparent);
+}
+.tl-chip.active .ch-count { color: var(--brand-subtle-fg); }
+
+/* ---------- Right column / Ask Aida ---------- */
+.aida-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  display: flex; flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.aida-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.aida-head .mk {
+  width: 22px; height: 22px;
+  border-radius: var(--radius-sm);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--brand);
+}
+.aida-head .ttl {
+  font-size: 13.5px; font-weight: 600; color: var(--fg-1);
+  letter-spacing: -0.005em;
+}
+.aida-head .sub {
+  font-size: 11px;
+  color: var(--fg-3);
+  font-family: var(--font-mono);
+  margin-left: auto;
+}
+.aida-head .collapse-btn {
+  width: 26px; height: 26px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  color: var(--fg-2);
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  margin-left: 6px;
+}
+.aida-head .collapse-btn:hover { background: var(--surface-2); color: var(--fg-1); }
+
+/* Collapsed rail */
+.aida-rail {
+  width: 36px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  display: flex; flex-direction: column;
+  align-items: center;
+  padding: 10px 0;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+}
+.aida-rail .mk {
+  color: var(--brand);
+  display: inline-flex;
+}
+.aida-rail .reopen {
+  width: 26px; height: 26px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--surface-2);
+  color: var(--fg-2);
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.aida-rail .reopen:hover { color: var(--brand); }
+.aida-rail .vlabel {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--fg-3);
+  margin-top: 6px;
+  user-select: none;
+}
+
+/* ---------- Aida summary (collapsible) ---------- */
+.aida-summary {
+  margin: 10px 12px 0;
+  border: 1px solid color-mix(in oklab, var(--brand) 18%, transparent);
+  border-radius: var(--radius-md);
+  background: var(--brand-subtle);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.aida-summary .sum-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  background: none; border: none; width: 100%;
+  text-align: left;
+  color: var(--fg-1);
+  transition: background-color 100ms ease-out;
+}
+.aida-summary .sum-head:hover { background: color-mix(in oklab, var(--brand) 6%, transparent); }
+.aida-summary .sum-head .lbl {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--brand-subtle-fg);
+  flex-shrink: 0;
+}
+.aida-summary .sum-head .preview {
+  font-size: 12px; color: var(--fg-1);
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  line-height: 1.3;
+}
+.aida-summary .sum-head .caret {
+  color: var(--brand-subtle-fg);
+  display: inline-flex; flex-shrink: 0;
+  transition: transform 160ms ease-out;
+}
+.aida-summary.open .sum-head .caret { transform: rotate(180deg); }
+.aida-summary .sum-body {
+  padding: 0 14px 12px;
+  font-size: 12.5px;
+  color: var(--fg-1);
+  line-height: 1.55;
+  display: none;
+}
+.aida-summary.open .sum-body { display: block; }
+
+.aida-chat {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 14px 4px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.aida-chat::-webkit-scrollbar { width: 8px; }
+.aida-chat::-webkit-scrollbar-thumb {
+  background: var(--border-strong); border-radius: 4px;
+}
+.aida-chat::-webkit-scrollbar-track { background: transparent; }
+
+.msg { display: flex; gap: 10px; }
+.msg.user { flex-direction: row-reverse; }
+.msg .av {
+  width: 24px; height: 24px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--fg-2);
+  flex-shrink: 0;
+  font-size: 10px; font-weight: 600;
+}
+.msg.aida .av { color: var(--brand); background: var(--brand-subtle); }
+
+.msg .bubble {
+  max-width: calc(100% - 44px);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--fg-1);
+}
+.msg.user .bubble {
+  background: var(--fg-1);
+  color: var(--bg);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border-top-right-radius: var(--radius-sm);
+}
+:root[data-theme="dark"] .msg.user .bubble { color: var(--bg); }
+.msg.aida .bubble .who {
+  font-size: 10.5px; font-weight: 600;
+  color: var(--brand);
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
+}
+
+.aida-cites {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin-top: 8px;
+}
+.aida-cite {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--fg-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: all 120ms ease-out;
+}
+.aida-cite:hover { color: var(--brand); border-color: var(--brand); }
+.aida-cite.flash {
+  background: var(--brand-subtle);
+  border-color: var(--brand);
+  color: var(--brand-subtle-fg);
+}
+
+.msg.thinking .bubble {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--fg-2);
+  font-size: 12px;
+}
+.dot-pulse {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--brand);
+  animation: dotp 1.2s ease-in-out infinite;
+}
+.dot-pulse:nth-child(2) { animation-delay: 0.15s; }
+.dot-pulse:nth-child(3) { animation-delay: 0.30s; }
+@keyframes dotp {
+  0%, 80%, 100% { opacity: 0.25; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+
+.aida-input-wrap {
+  border-top: 1px solid var(--border);
+  padding: 10px 12px 12px;
+  flex-shrink: 0;
+  background: var(--surface);
+}
+.aida-suggested {
+  display: flex; gap: 6px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.suggested-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 10px;
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  font-size: 11.5px; color: var(--fg-1);
+  cursor: pointer;
+  transition: all 100ms ease-out;
+}
+.suggested-chip:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+  background: var(--brand-subtle);
+}
+.suggested-chip .pl { color: var(--fg-3); }
+.suggested-chip:hover .pl { color: var(--brand); }
+
+.aida-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  transition: border-color 100ms ease-out, box-shadow 100ms ease-out;
+}
+.aida-input:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-ring); }
+.aida-input input {
+  flex: 1;
+  height: 36px;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0 10px 0 12px;
+  font-size: 13px;
+  color: var(--fg-1);
+}
+.aida-input input::placeholder { color: var(--fg-3); }
+.aida-input .send {
+  width: 28px; height: 28px;
+  border-radius: var(--radius-sm);
+  background: var(--brand);
+  border: none;
+  color: var(--fg-on-brand);
+  display: inline-flex; align-items: center; justify-content: center;
+  margin-right: 4px;
+  cursor: pointer;
+  transition: background 100ms ease-out;
+}
+.aida-input .send:hover { background: var(--brand-hover); }
+.aida-input .send:disabled { background: var(--border-strong); cursor: not-allowed; }
+
+.aida-foot {
+  margin-top: 8px;
+  font-size: 10.5px;
+  color: var(--fg-3);
+  text-align: center;
+  font-family: var(--font-mono);
+}
+.aida-foot .kbd {
+  font-family: var(--font-mono);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0 4px;
+  margin: 0 1px;
+}
+
+/* ---------- Modal ---------- */
+.scrim {
+  position: fixed; inset: 0;
+  background: var(--scrim);
+  z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  animation: scrim-in 120ms ease-out;
+}
+@keyframes scrim-in { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  width: 480px; max-width: calc(100vw - 48px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  padding: 0;
+  overflow: hidden;
+  animation: modal-in 140ms ease-out;
+}
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.modal .head {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.modal .head .ttl { font-size: 14px; font-weight: 600; flex: 1; }
+.modal .head .meta {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--fg-3);
+}
+.modal .body {
+  padding: 20px;
+  display: block;
+}
+.modal .body .field-row {
+  display: grid; grid-template-columns: 100px 1fr;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.modal .body .field-row:last-child { border-bottom: 0; }
+.modal .body .field-row .k {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.modal .body .field-row .v { color: var(--fg-1); }
+.modal .body .field-row .v.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.modal .foot {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 12px;
+}
+.modal .foot .note {
+  font-size: 11.5px;
+  color: var(--fg-2);
+  font-style: italic;
+}
+.modal .foot .actions { display: inline-flex; gap: 8px; }
+
+/* ---------- Status pill menu ---------- */
+.status-menu {
+  position: absolute;
+  top: 38px;
+  left: 0;
+  min-width: 180px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-2);
+  padding: 4px;
+  z-index: 50;
+}
+.status-menu .opt {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  cursor: pointer;
+  background: none; border: none; width: 100%; text-align: left;
+}
+.status-menu .opt:hover { background: var(--surface-2); }
+.status-menu .opt .dot { width: 8px; height: 8px; border-radius: 50%; }
+.status-menu .opt.s .dot { background: var(--success); }
+.status-menu .opt.w .dot { background: var(--warning); }
+.status-menu .opt.c .dot { background: var(--critical); }
+.status-menu .opt .desc {
+  font-size: 11px;
+  color: var(--fg-3);
+  margin-left: auto;
+  font-family: var(--font-mono);
+}
+.status-menu .opt.active .check { color: var(--brand); }
+.status-menu .opt .check { color: transparent; margin-left: auto; }
+
+/* Click-out catcher for popovers */
+.popover-catch {
+  position: fixed; inset: 0;
+  z-index: 40;
+}
+
+  </style>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-presets="env,react">/* global React */
+// Tokens, theme, brand mark, and a small icon set used across the page.
+
+const { useState, useEffect, useMemo, useRef } = React;
+
+// ----- Token data (rendered by the page) ---------------------------
+const COLOR_GROUPS = [
+  {
+    title: "Surfaces",
+    desc: "Backgrounds, cards, hairlines. Use position and contrast to define structure — not heavy strokes.",
+    items: [
+      { name: "bg",            light: "#FAFAF9", dark: "#0A0A09" },
+      { name: "surface",       light: "#FFFFFF", dark: "#1C1C1B" },
+      { name: "surface-2",     light: "#F5F5F4", dark: "#232220" },
+      { name: "border",        light: "#E7E5E4", dark: "#292524" },
+      { name: "border-strong", light: "#D6D3D1", dark: "#44403C" },
+    ],
+  },
+  {
+    title: "Text",
+    desc: "Three-step text scale. Reach for fg-2 by default for supporting copy; fg-3 is for low-priority metadata only.",
+    items: [
+      { name: "fg-1", light: "#1C1917", dark: "#F5F5F4" },
+      { name: "fg-2", light: "#57534E", dark: "#A8A29E" },
+      { name: "fg-3", light: "#A8A29E", dark: "#57534E" },
+    ],
+  },
+  {
+    title: "Brand",
+    desc: "A single muted teal. Use sparingly: active states, primary CTAs, the Aida accent.",
+    items: [
+      { name: "brand",        light: "#0F766E", dark: "#2DD4BF" },
+      { name: "brand-hover",  light: "#115E59", dark: "#5EEAD4" },
+      { name: "brand-subtle", light: "#F0FDFA", dark: "rgba(45,212,191,0.10)" },
+    ],
+  },
+  {
+    title: "Semantic",
+    desc: "Desaturated by design — none of these should startle when used at small sizes. Red is reserved for genuinely critical states.",
+    items: [
+      { name: "critical", light: "#E11D48", dark: "#F43F5E" },
+      { name: "warning",  light: "#D97706", dark: "#F59E0B" },
+      { name: "success",  light: "#059669", dark: "#10B981" },
+      { name: "info",     light: "#0284C7", dark: "#0EA5E9" },
+    ],
+  },
+];
+
+const TYPE_SCALE = [
+  { name: "display", spec: "48 / 1.05 / 500 · mono · tabular-nums", className: "display", sample: "72" },
+  { name: "h1",      spec: "24 / 1.25 / 600 · sans",                style: { fontSize: 24, fontWeight: 600, letterSpacing: "-0.011em" }, sample: "Patient overview" },
+  { name: "h2",      spec: "18 / 1.35 / 600 · sans",                style: { fontSize: 18, fontWeight: 600, letterSpacing: "-0.006em" }, sample: "Recent events" },
+  { name: "body",    spec: "14 / 1.5 / 400 · sans",                 style: { fontSize: 14, fontWeight: 400 },                          sample: "Aida summarized the last shift handoff and flagged two events for review." },
+  { name: "small",   spec: "12 / 1.4 / 500 · sans",                 style: { fontSize: 12, fontWeight: 500, color: "var(--fg-2)" },    sample: "Last updated 2 minutes ago" },
+  { name: "tiny",    spec: "11 / 1.3 / 400 · mono",                 style: { fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--fg-3)" }, sample: "MRN 4837210 · BED ICU-04" },
+];
+
+const SPACING = [
+  { name: "space-1",  px: 4  },
+  { name: "space-2",  px: 8  },
+  { name: "space-3",  px: 12 },
+  { name: "space-4",  px: 16 },
+  { name: "space-6",  px: 24 },
+  { name: "space-8",  px: 32 },
+  { name: "space-12", px: 48 },
+  { name: "space-16", px: 64 },
+];
+
+const RADII = [
+  { name: "radius-sm", px: 4, use: "badges · chips" },
+  { name: "radius-md", px: 6, use: "buttons · inputs · cards" },
+  { name: "radius-lg", px: 8, use: "panels · modals" },
+];
+
+// ----- Brand mark --------------------------------------------------
+function AidaMark({ size = 28, className = "", style = {} }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 64 64"
+      fill="none"
+      className={className}
+      style={style}
+      aria-label="Aida"
+    >
+      <path
+        fill="currentColor"
+        fillRule="evenodd"
+        d="M14 0h36a14 14 0 0 1 14 14v36a14 14 0 0 1-14 14H14A14 14 0 0 1 0 50V14A14 14 0 0 1 14 0Zm-2 25a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h40a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H12Z"
+      />
+    </svg>
+  );
+}
+
+// ----- Theme toggle ------------------------------------------------
+function useTheme() {
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem("aida-theme") || "light"; }
+    catch { return "light"; }
+  });
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try { localStorage.setItem("aida-theme", theme); } catch {}
+  }, [theme]);
+  return [theme, setTheme];
+}
+
+function ThemeToggle({ theme, setTheme }) {
+  return (
+    <button
+      type="button"
+      onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+      className="btn secondary md"
+      aria-label={`Switch to ${theme === "light" ? "dark" : "light"} theme`}
+      title={`Switch to ${theme === "light" ? "dark" : "light"} theme`}
+    >
+      {theme === "light" ? <Icon name="moon" size={14} /> : <Icon name="sun" size={14} />}
+      <span style={{ marginLeft: 4 }}>{theme === "light" ? "Dark" : "Light"}</span>
+    </button>
+  );
+}
+
+// ----- Small inline icon set (Lucide-style, 1.5px stroke) ---------
+const ICONS = {
+  search: "M11 4a7 7 0 1 1 0 14 7 7 0 0 1 0-14ZM21 21l-4.3-4.3",
+  chevronDown: "m6 9 6 6 6-6",
+  check: "M5 12.5 9.5 17 19 7",
+  plus: "M12 5v14M5 12h14",
+  x: "M6 6l12 12M18 6L6 18",
+  arrowUp:    "M12 19V5M5 12l7-7 7 7",
+  arrowDown:  "M12 5v14M5 12l7 7 7-7",
+  arrowRight: "M5 12h14M13 5l7 7-7 7",
+  arrowFlat:  "M5 12h14",
+  alert:      "M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01",
+  info:       "M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18zM12 8h.01M11 12h1v4h1",
+  shieldAlert:"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM12 8v4M12 16h.01",
+  sun:        "M12 3v2M12 19v2M5 12H3M21 12h-2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4M12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10z",
+  moon:       "M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z",
+  more:       "M5 12h.01M12 12h.01M19 12h.01",
+  stethoscope:"M6 3v6a4 4 0 0 0 8 0V3M9 21a3 3 0 0 1-3-3v-3M9 21a3 3 0 0 0 3-3v-3M18 8a2 2 0 1 1 0 4 2 2 0 0 1 0-4z",
+  activity:   "M22 12h-4l-3 9L9 3l-3 9H2",
+  bed:        "M3 18V8h11a5 5 0 0 1 5 5v5M3 14h18M3 21v-3M21 21v-3M7 11a2 2 0 1 1 0-4 2 2 0 0 1 0 4z",
+  pill:       "M10.5 20.5a7 7 0 0 1-10-10l10-10a7 7 0 1 1 10 10l-10 10zM8.5 8.5l7 7",
+  bell:       "M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 0 0 4 0",
+  command:    "M18 6a3 3 0 1 1 0 6h-3V6h3zM18 18a3 3 0 1 0 0-6h-3v6h3zM6 6a3 3 0 1 0 0 6h3V6H6zM6 18a3 3 0 1 1 0-6h3v6H6z",
+  video:      "M23 7l-7 5 7 5V7zM1 5h15v14H1z",
+  camera:     "M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2v11zM12 17a4 4 0 1 1 0-8 4 4 0 0 1 0 8z",
+  send:       "M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z",
+  chevronRight: "m9 18 6-6-6-6",
+  chevronLeft:  "m15 18-6-6 6-6",
+  chevronUp:    "m18 15-6-6-6 6",
+  user:       "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8z",
+  userCheck:  "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8zM17 11l2 2 4-4",
+  userX:      "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8zM18 8l5 5M23 8l-5 5",
+  clock:      "M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18zM12 7v5l3 2",
+  expand:     "M4 14v6h6M20 10V4h-6M14 10l7-7M3 21l7-7",
+  circle:     "M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z",
+  bedExit:    "M3 18V8h11a5 5 0 0 1 5 5v5M3 14h12M3 21v-3M21 21v-3M16 4l5 5M21 4l-5 5",
+  footprints: "M4 16a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v2H4v-2zM13 6a3 3 0 0 1 3-3h0a3 3 0 0 1 3 3v2h-6V6z",
+  eye:        "M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12zM12 15a3 3 0 1 1 0-6 3 3 0 0 1 0 6z",
+  refresh:    "M21 12a9 9 0 0 1-15.5 6.3L1 14M3 12a9 9 0 0 1 15.5-6.3L23 10M1 4v6h6M23 20v-6h-6",
+  mic:        "M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8",
+  trendingDown:"M22 17l-9.5-9.5-5 5L1 6M16 17h6v-6",
+  trendingFlat:"M5 12h14",
+  chart:      "M3 3v18h18M7 14l4-4 3 3 5-6",
+  pin:        "M12 17v5M5 8a7 7 0 0 1 14 0c0 3-2 6-7 9-5-3-7-6-7-9z",
+  filter:     "M3 4h18l-7 9v7l-4-2v-5L3 4z",
+  layers:     "M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5",
+  zap:        "M13 2 3 14h7l-1 8 10-12h-7l1-8z",
+  panelRightClose: "M3 4a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4zM15 3v18M10 15l-3-3 3-3",
+  panelRightOpen:  "M3 4a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4zM15 3v18M8 9l3 3-3 3",
+};
+
+function Icon({ name, size = 16, strokeWidth = 1.5, className = "", style = {} }) {
+  const d = ICONS[name];
+  if (!d) return null;
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      style={{ flexShrink: 0, ...style }}
+      aria-hidden="true"
+    >
+      {d.split("M").filter(Boolean).map((seg, i) => (
+        <path key={i} d={"M" + seg} />
+      ))}
+    </svg>
+  );
+}
+
+Object.assign(window, {
+  COLOR_GROUPS, TYPE_SCALE, SPACING, RADII,
+  AidaMark, ThemeToggle, useTheme, Icon,
+});
+</script>
+  <script type="text/babel" data-presets="env,react">/* global React, Icon */
+// Generic UI primitives — buttons, badges, inputs, dots, tags.
+
+const { useState: useStatePrim } = React;
+
+// ----- Buttons -----------------------------------------------------
+function Button({ variant = "secondary", size = "md", icon = null, iconOnly = false, children, ...rest }) {
+  const cls = ["btn", variant, size, iconOnly ? "icon" : ""].filter(Boolean).join(" ");
+  return (
+    <button type="button" className={cls} {...rest}>
+      {icon && <Icon name={icon} size={size === "sm" ? 12 : size === "lg" ? 16 : 14} />}
+      {!iconOnly && children}
+    </button>
+  );
+}
+
+// ----- Status dots & badges ---------------------------------------
+function StatusDot({ tone = "gray" }) {
+  return <span className={`dot ${tone}`} aria-hidden="true" />;
+}
+
+function StatusBadge({ tone = "success", children }) {
+  return (
+    <span className="badge">
+      <StatusDot tone={tone} />
+      {children}
+    </span>
+  );
+}
+
+function SeverityTag({ tone = "info", children }) {
+  return <span className={`tag ${tone}`}>{children}</span>;
+}
+
+// ----- Inputs ------------------------------------------------------
+function Field({ label, helper, error, children }) {
+  return (
+    <label className="field">
+      {label && <span className="field-label">{label}</span>}
+      {children}
+      {error
+        ? <span className="field-error">{error}</span>
+        : helper && <span className="field-help">{helper}</span>}
+    </label>
+  );
+}
+
+function TextInput({ error, leadingIcon, ...rest }) {
+  if (leadingIcon) {
+    return (
+      <span className="input-icon-wrap">
+        <span className="leading-icon"><Icon name={leadingIcon} size={14} /></span>
+        <input className={"input" + (error ? " error" : "")} {...rest} />
+      </span>
+    );
+  }
+  return <input className={"input" + (error ? " error" : "")} {...rest} />;
+}
+
+function Select({ children, ...rest }) {
+  return (
+    <span style={{ position: "relative", display: "block" }}>
+      <select className="select" style={{ appearance: "none", paddingRight: 28 }} {...rest}>
+        {children}
+      </select>
+      <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "var(--fg-3)", pointerEvents: "none" }}>
+        <Icon name="chevronDown" size={14} />
+      </span>
+    </span>
+  );
+}
+
+function Textarea(props) {
+  return <textarea className="textarea" {...props} />;
+}
+
+function Toggle({ on, onChange, disabled = false }) {
+  return (
+    <span
+      role="switch"
+      aria-checked={on}
+      tabIndex={disabled ? -1 : 0}
+      className={"toggle " + (on ? "on " : "") + (disabled ? "disabled" : "")}
+      onClick={() => !disabled && onChange && onChange(!on)}
+      onKeyDown={(e) => { if (!disabled && (e.key === " " || e.key === "Enter")) { e.preventDefault(); onChange && onChange(!on); } }}
+    />
+  );
+}
+
+function Checkbox({ on, onChange, disabled = false }) {
+  return (
+    <span
+      role="checkbox"
+      aria-checked={on}
+      tabIndex={disabled ? -1 : 0}
+      className={"checkbox " + (on ? "on " : "")}
+      onClick={() => !disabled && onChange && onChange(!on)}
+      onKeyDown={(e) => { if (!disabled && (e.key === " " || e.key === "Enter")) { e.preventDefault(); onChange && onChange(!on); } }}
+      style={disabled ? { opacity: 0.4, cursor: "not-allowed" } : null}
+    >
+      <Icon name="check" size={12} strokeWidth={2.5} />
+    </span>
+  );
+}
+
+// ----- Keyboard hint -----------------------------------------------
+function Kbd({ children }) { return <kbd className="key">{children}</kbd>; }
+
+function KbdRow({ label, keys }) {
+  return (
+    <div className="kbd-row">
+      <span className="label">{label}</span>
+      <span className="keys">
+        {keys.map((k, i) => <Kbd key={i}>{k}</Kbd>)}
+      </span>
+    </div>
+  );
+}
+
+Object.assign(window, {
+  Button, StatusDot, StatusBadge, SeverityTag,
+  Field, TextInput, Select, Textarea, Toggle, Checkbox,
+  Kbd, KbdRow,
+});
+</script>
+  <script type="text/babel" data-presets="env,react">/* global React, Icon, AidaMark, StatusDot, StatusBadge, Button */
+// Clinical-specific components — the parts that make Aida feel like Aida.
+
+// ----- Sparkline (decorative, behind vitals number) ---------------
+function Sparkline({ data, color = "currentColor", width = 240, height = 56 }) {
+  if (!data || data.length === 0) return null;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const span = Math.max(max - min, 0.0001);
+  const step = width / (data.length - 1);
+  const points = data.map((v, i) => {
+    const x = i * step;
+    const y = height - ((v - min) / span) * (height - 2) - 1;
+    return [x, y];
+  });
+  const d = points.map(([x, y], i) => (i === 0 ? `M${x},${y}` : `L${x},${y}`)).join(" ");
+  const dFill = d + ` L${width},${height} L0,${height} Z`;
+  return (
+    <svg className="spark" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden="true">
+      <path d={dFill} fill={color} opacity="0.10" />
+      <path d={d} fill="none" stroke={color} strokeWidth="1.25" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+// ----- Patient header strip ---------------------------------------
+function PatientHeader({
+  name = "Margaret Chen",
+  age = 67,
+  sex = "F",
+  mrn = "4837210",
+  bed = "ICU-04",
+  diagnosis = "Post-op CABG, day 2",
+  status = { tone: "success", label: "Stable" },
+}) {
+  return (
+    <div className="patient-strip">
+      <div className="name">{name}</div>
+      <div className="meta">
+        <div className="meta-item">
+          <span className="k">Age / Sex</span>
+          <span className="v">{age} · {sex}</span>
+        </div>
+        <span className="sep" />
+        <div className="meta-item">
+          <span className="k">MRN</span>
+          <span className="v">{mrn}</span>
+        </div>
+        <span className="sep" />
+        <div className="meta-item">
+          <span className="k">Bed</span>
+          <span className="v">{bed}</span>
+        </div>
+        <span className="sep" />
+        <div className="meta-item">
+          <span className="k">Admission</span>
+          <span className="v v-text">{diagnosis}</span>
+        </div>
+      </div>
+      <div className="right">
+        <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
+        <Button variant="secondary" size="sm" icon="more" iconOnly aria-label="More patient actions" />
+      </div>
+    </div>
+  );
+}
+
+// ----- Vitals card -------------------------------------------------
+function VitalCard({ label, value, unit, trend, data, alert = false }) {
+  const trendDir = trend > 0 ? "up" : trend < 0 ? "down" : "flat";
+  const trendIcon = trend > 0 ? "arrowUp" : trend < 0 ? "arrowDown" : "arrowFlat";
+  const sparkColor = alert ? "var(--critical)" : "var(--brand)";
+  return (
+    <div className={"vital-card" + (alert ? " alert" : "")}>
+      <Sparkline data={data} color={sparkColor} />
+      <div className="vitals-label">{label}</div>
+      <div className="vitals-value">
+        <span className="vitals-num">{value}</span>
+        <span className="vitals-unit">{unit}</span>
+        <span className={`vitals-trend ${trendDir}`}>
+          <Icon name={trendIcon} size={12} strokeWidth={2} />
+          {Math.abs(trend)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ----- Event timeline ---------------------------------------------
+function EventTimeline({
+  startHour = 4,
+  endHour = 8,
+  nowFraction = 0.78,
+  events = [],
+}) {
+  const ticks = [];
+  for (let h = startHour; h <= endHour; h++) {
+    ticks.push({ hour: h, label: `${String(h).padStart(2, "0")}:00`, pos: (h - startHour) / (endHour - startHour) });
+  }
+  return (
+    <div className="timeline">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+        <div style={{ fontSize: 13, fontWeight: 600 }}>Last 4 hours</div>
+        <div style={{ fontSize: 11, color: "var(--fg-3)", fontFamily: "var(--font-mono)" }}>
+          {String(startHour).padStart(2, "0")}:00 – {String(endHour).padStart(2, "0")}:00
+        </div>
+      </div>
+      <div className="axis">
+        {ticks.map((t) => (
+          <React.Fragment key={t.hour}>
+            <span className="tick" style={{ left: `${t.pos * 100}%` }} />
+            <span className="tick-label" style={{ left: `${t.pos * 100}%` }}>{t.label}</span>
+          </React.Fragment>
+        ))}
+        {events.map((e, i) => (
+          <span
+            key={i}
+            className={`marker ${e.tone}${e.large ? " large" : ""}`}
+            style={{ left: `${e.at * 100}%` }}
+            title={`${e.label} · ${e.time}`}
+          />
+        ))}
+        <span className="now" style={{ left: `${nowFraction * 100}%` }} />
+      </div>
+      <div style={{ display: "flex", gap: 16, marginTop: 20, flexWrap: "wrap" }}>
+        {[
+          { tone: "info",     label: "Info" },
+          { tone: "warning",  label: "Warning" },
+          { tone: "critical", label: "Critical" },
+          { tone: "success",  label: "Resolved" },
+        ].map((t) => (
+          <div key={t.tone} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--fg-2)" }}>
+            <span className={`marker ${t.tone}`} style={{ position: "static", transform: "none", border: "none" }} />
+            {t.label}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ----- Alert banners ----------------------------------------------
+function AlertBanner({ variant = "subtle", title, message, action, onDismiss }) {
+  const icon = variant === "prominent" ? "shieldAlert" : "alert";
+  return (
+    <div className={`banner ${variant}`}>
+      <Icon name={icon} size={16} className="icon" />
+      <div className="body">
+        {title && <div className="ttl">{title}</div>}
+        {message && <div className="msg">{message}</div>}
+      </div>
+      {action && <button type="button" className="btn sm secondary" onClick={action.onClick}>{action.label}</button>}
+      {variant === "subtle" && onDismiss && (
+        <button type="button" className="btn sm tertiary icon" aria-label="Dismiss" onClick={onDismiss}>
+          <Icon name="x" size={14} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ----- Assistant chat bubble --------------------------------------
+function AssistantBubble({ children, citations = [] }) {
+  return (
+    <div className="chat-bubble">
+      <span className="chat-avatar">
+        <AidaMark size={18} />
+      </span>
+      <div className="chat-body">
+        <div className="who">Aida</div>
+        <div>{children}</div>
+        {citations.length > 0 && (
+          <div className="chat-cites">
+            {citations.map((c, i) => (
+              <button key={i} className="cite-chip" type="button">
+                <Icon name={c.icon || "activity"} size={11} strokeWidth={1.75} />
+                {c.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, {
+  Sparkline, PatientHeader, VitalCard, EventTimeline, AlertBanner, AssistantBubble,
+});
+</script>
+  <script type="text/babel" data-presets="env,react">/* global React */
+// ICU room scene (the background of the "live video") + overlays.
+// Stylized SVG illustration of an ICU room: window with daylight, bed with
+// patient under blanket, bedside monitor on the right wall.
+
+function ICURoomScene({ variant = "bedside-1" }) {
+  return (
+    <svg
+      className="scene"
+      viewBox="0 0 1280 720"
+      preserveAspectRatio="xMidYMid slice"
+      aria-label="ICU room — Bedside Cam 1"
+    >
+      <defs>
+        <linearGradient id="sc-wall" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#1a2530" />
+          <stop offset="55%" stopColor="#141d26" />
+          <stop offset="100%" stopColor="#0c141c" />
+        </linearGradient>
+        <linearGradient id="sc-floor" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#1a232c" />
+          <stop offset="100%" stopColor="#0c1218" />
+        </linearGradient>
+        <linearGradient id="sc-window" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#9bbedc" />
+          <stop offset="55%" stopColor="#6b8eaf" />
+          <stop offset="100%" stopColor="#4b6c8a" />
+        </linearGradient>
+        <linearGradient id="sc-blanket" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#5d6e7e" />
+          <stop offset="100%" stopColor="#3a4651" />
+        </linearGradient>
+        <linearGradient id="sc-sheet" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#46545f" />
+          <stop offset="100%" stopColor="#2c3640" />
+        </linearGradient>
+        <radialGradient id="sc-spot" cx="0.22" cy="0.28" r="0.45">
+          <stop offset="0%" stopColor="#9bbedc" stopOpacity="0.18" />
+          <stop offset="60%" stopColor="#5b7fa1" stopOpacity="0.07" />
+          <stop offset="100%" stopColor="#000" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id="sc-vig" cx="0.5" cy="0.5" r="0.7">
+          <stop offset="60%" stopColor="#000" stopOpacity="0" />
+          <stop offset="100%" stopColor="#000" stopOpacity="0.45" />
+        </radialGradient>
+
+        {/* Tiny noise pattern to make it feel like video */}
+        <filter id="sc-grain" x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="3" />
+          <feColorMatrix values="0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0.04 0" />
+          <feComposite in2="SourceGraphic" operator="in" />
+        </filter>
+      </defs>
+
+      {/* Back wall */}
+      <rect width="1280" height="720" fill="url(#sc-wall)" />
+
+      {/* Window light spill */}
+      <rect width="1280" height="720" fill="url(#sc-spot)" />
+
+      {/* Window */}
+      <g>
+        <rect x="90" y="70" width="310" height="260" rx="2" fill="url(#sc-window)" />
+        {/* Frame */}
+        <rect x="90" y="70" width="310" height="260" rx="2" fill="none" stroke="#2c3a48" strokeWidth="2.5" />
+        {/* Mullions */}
+        <line x1="245" y1="70" x2="245" y2="330" stroke="#2c3a48" strokeWidth="3" />
+        <line x1="90" y1="200" x2="400" y2="200" stroke="#2c3a48" strokeWidth="3" />
+        {/* Faint cloud shapes */}
+        <ellipse cx="180" cy="160" rx="60" ry="14" fill="#c8d8e8" opacity="0.32" />
+        <ellipse cx="320" cy="240" rx="48" ry="12" fill="#c8d8e8" opacity="0.22" />
+        {/* Sill */}
+        <rect x="80" y="328" width="330" height="6" rx="1" fill="#374554" />
+      </g>
+
+      {/* Curtain track (subtle) */}
+      <rect x="60" y="60" width="380" height="3" fill="#26323e" />
+
+      {/* Curtain — left edge */}
+      <g opacity="0.85">
+        <rect x="0" y="60" width="68" height="460" fill="#1a232c" />
+        <line x1="20" y1="60" x2="20" y2="520" stroke="#101820" strokeWidth="1" />
+        <line x1="40" y1="60" x2="40" y2="520" stroke="#101820" strokeWidth="1" />
+        <line x1="58" y1="60" x2="58" y2="520" stroke="#101820" strokeWidth="1" />
+      </g>
+
+      {/* Floor band */}
+      <rect x="0" y="520" width="1280" height="200" fill="url(#sc-floor)" />
+      <line x1="0" y1="520" x2="1280" y2="520" stroke="#26323e" strokeWidth="1" />
+      {/* Faint floor reflections */}
+      <ellipse cx="640" cy="690" rx="600" ry="22" fill="#2a3540" opacity="0.35" />
+
+      {/* IV pole behind bed */}
+      <g>
+        <rect x="1112" y="158" width="3" height="372" fill="#5a6b7a" />
+        <line x1="1080" y1="160" x2="1144" y2="160" stroke="#5a6b7a" strokeWidth="3" />
+        {/* IV bag */}
+        <path d="M1098 175 L1130 175 L1126 232 Q1126 240 1118 240 L1110 240 Q1102 240 1102 232 Z"
+              fill="#b8c9da" opacity="0.78" />
+        {/* IV line */}
+        <path d="M1114 240 Q1114 290 1040 320 Q970 348 920 410"
+              fill="none" stroke="#9bb0c6" strokeWidth="1.1" opacity="0.55" />
+        {/* Base */}
+        <line x1="1080" y1="528" x2="1144" y2="528" stroke="#5a6b7a" strokeWidth="2.5" />
+        <line x1="1085" y1="525" x2="1085" y2="535" stroke="#5a6b7a" strokeWidth="1.5" />
+        <line x1="1140" y1="525" x2="1140" y2="535" stroke="#5a6b7a" strokeWidth="1.5" />
+      </g>
+
+      {/* Bed (parallelogram with subtle perspective) */}
+      <g>
+        {/* Shadow under bed */}
+        <ellipse cx="630" cy="630" rx="380" ry="22" fill="#000" opacity="0.45" />
+
+        {/* Bed frame base */}
+        <path d="M 270 600 L 290 410 L 990 410 L 1010 600 Z" fill="#212a34" />
+
+        {/* Mattress / sheets */}
+        <path d="M 290 410 L 990 410 L 1006 590 L 274 590 Z" fill="url(#sc-sheet)" />
+
+        {/* Side rail (foot end) */}
+        <rect x="285" y="402" width="14" height="50" rx="2" fill="#3a4651" />
+        <rect x="982" y="402" width="14" height="50" rx="2" fill="#3a4651" />
+        <line x1="299" y1="412" x2="982" y2="412" stroke="#3a4651" strokeWidth="2" />
+
+        {/* Blanket — foot half */}
+        <path d="M 290 410 L 660 408 L 700 588 L 282 588 Z" fill="url(#sc-blanket)" />
+        {/* Blanket fold line */}
+        <path d="M 660 408 L 700 588" stroke="#2c3640" strokeWidth="1.5" opacity="0.6" />
+        {/* Subtle blanket creases */}
+        <path d="M 380 430 Q 420 510 460 580" stroke="#2c3640" strokeWidth="1" fill="none" opacity="0.4" />
+        <path d="M 530 425 Q 560 500 590 580" stroke="#2c3640" strokeWidth="1" fill="none" opacity="0.4" />
+
+        {/* Patient body shapes under blanket - feet bumps */}
+        <ellipse cx="360" cy="495" rx="38" ry="14" fill="#4d5e6f" opacity="0.85" />
+        <ellipse cx="430" cy="475" rx="32" ry="11" fill="#4d5e6f" opacity="0.7" />
+
+        {/* Patient torso area (above blanket fold) */}
+        <ellipse cx="780" cy="475" rx="105" ry="32" fill="#3a4651" opacity="0.8" />
+        {/* Gown — slight green tint */}
+        <path d="M 700 460 Q 700 490 730 500 L 850 502 Q 880 492 880 462 Q 880 445 855 440 L 720 440 Q 700 445 700 460 Z"
+              fill="#4a5e6f" opacity="0.7" />
+
+        {/* Pillow */}
+        <ellipse cx="900" cy="450" rx="78" ry="22" fill="#d4dee8" opacity="0.88" />
+        <ellipse cx="900" cy="446" rx="68" ry="14" fill="#e9eef3" opacity="0.6" />
+
+        {/* Head */}
+        <ellipse cx="900" cy="443" rx="28" ry="32" fill="#b8a48c" opacity="0.86" />
+        {/* Hair */}
+        <path d="M 874 432 Q 900 412 928 434 Q 928 425 916 418 Q 904 410 893 412 Q 879 416 874 432 Z"
+              fill="#3b322a" opacity="0.9" />
+        {/* Pillow shadow under head */}
+        <ellipse cx="900" cy="470" rx="30" ry="6" fill="#000" opacity="0.18" />
+        {/* Cannula hint */}
+        <path d="M 905 458 L 915 470 M 895 458 L 885 470" stroke="#d4dee8" strokeWidth="1" opacity="0.55" />
+
+        {/* Arm exposed above blanket */}
+        <path d="M 720 482 Q 760 500 810 498" fill="none" stroke="#b8a48c" strokeWidth="14" strokeLinecap="round" opacity="0.55" />
+        {/* Wristband */}
+        <rect x="720" y="478" width="14" height="10" rx="2" fill="#0f766e" opacity="0.7" />
+      </g>
+
+      {/* Bedside monitor on right */}
+      <g>
+        {/* Mount arm */}
+        <rect x="1156" y="280" width="60" height="6" rx="2" fill="#3a4651" />
+        <rect x="1212" y="280" width="6" height="120" fill="#3a4651" />
+        {/* Monitor body */}
+        <rect x="1085" y="270" width="140" height="120" rx="5" fill="#16202a" stroke="#3a4651" strokeWidth="1.5" />
+        {/* Screen */}
+        <rect x="1093" y="278" width="124" height="104" rx="2" fill="#06090d" />
+        {/* HR waveform */}
+        <polyline
+          points="1095,310 1110,310 1115,304 1119,318 1124,294 1130,322 1135,310 1148,310 1158,310 1162,306 1167,316 1180,310 1198,310 1208,310 1216,310"
+          fill="none"
+          stroke="#22d3ee"
+          strokeWidth="1.3"
+          opacity="0.95"
+        />
+        {/* HR number */}
+        <text x="1099" y="345" fontFamily="JetBrains Mono, monospace" fontSize="20" fontWeight="600" fill="#22d3ee">72</text>
+        <text x="1138" y="345" fontFamily="JetBrains Mono, monospace" fontSize="9" fill="#22d3ee" opacity="0.7">bpm</text>
+        {/* SpO2 - slight color shift to amber for the dip */}
+        <text x="1099" y="372" fontFamily="JetBrains Mono, monospace" fontSize="14" fontWeight="600" fill="#f59e0b">94</text>
+        <text x="1128" y="372" fontFamily="JetBrains Mono, monospace" fontSize="9" fill="#f59e0b" opacity="0.7">%</text>
+        {/* BP */}
+        <text x="1170" y="345" fontFamily="JetBrains Mono, monospace" fontSize="10" fill="#a8e6cf">118/76</text>
+        <text x="1170" y="372" fontFamily="JetBrains Mono, monospace" fontSize="10" fill="#a8e6cf">RR 18</text>
+        {/* Status LED */}
+        <circle cx="1219" cy="278" r="2" fill="#10b981" />
+      </g>
+
+      {/* Tray table - lower left foreground */}
+      <g opacity="0.85">
+        <rect x="120" y="600" width="170" height="6" rx="2" fill="#2c3640" />
+        <line x1="135" y1="606" x2="135" y2="700" stroke="#2c3640" strokeWidth="2" />
+        <line x1="275" y1="606" x2="275" y2="700" stroke="#2c3640" strokeWidth="2" />
+        {/* Cup */}
+        <ellipse cx="180" cy="603" rx="14" ry="3" fill="#3a4651" />
+        <path d="M166 602 L170 612 L190 612 L194 602 Z" fill="#3a4651" />
+      </g>
+
+      {/* Door frame on far right (slightly visible) */}
+      <line x1="1245" y1="80" x2="1245" y2="520" stroke="#26323e" strokeWidth="1.5" />
+
+      {/* Soft vignette */}
+      <rect width="1280" height="720" fill="url(#sc-vig)" />
+
+      {/* Subtle film grain */}
+      <rect width="1280" height="720" fill="#fff" opacity="0.025" filter="url(#sc-grain)" />
+    </svg>
+  );
+}
+
+// Detection overlays drawn on top of the scene SVG. Coordinates match the
+// 1280×720 viewBox of the scene.
+function DetectionOverlay({ showPersonBox = true, showBedZone = true, showMonitorCrop = true }) {
+  return (
+    <svg
+      className="detections"
+      viewBox="0 0 1280 720"
+      preserveAspectRatio="xMidYMid slice"
+      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}
+      aria-hidden="true"
+    >
+      <defs>
+        <pattern id="bz-hatch" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="8" stroke="#0f766e" strokeWidth="0.8" opacity="0.35" />
+        </pattern>
+      </defs>
+
+      {/* Bed-zone polygon — outlines the bed area in perspective */}
+      {showBedZone && (
+        <g>
+          <polygon
+            points="282,400 998,400 1018,600 262,600"
+            fill="rgba(45, 212, 191, 0.10)"
+            stroke="rgba(45, 212, 191, 0.85)"
+            strokeWidth="1.5"
+            strokeDasharray="0"
+          />
+          {/* Corner pips */}
+          {[[282,400],[998,400],[1018,600],[262,600]].map(([x,y], i) => (
+            <g key={i}>
+              <line x1={x-6} y1={y} x2={x+6} y2={y} stroke="#2dd4bf" strokeWidth="1.5" />
+              <line x1={x} y1={y-6} x2={x} y2={y+6} stroke="#2dd4bf" strokeWidth="1.5" />
+            </g>
+          ))}
+          {/* Label */}
+          <g transform="translate(282, 380)">
+            <rect x="0" y="-14" width="78" height="18" rx="3" className="ov-label-bg" />
+            <text x="6" y="-1" className="ov-label">bed_zone</text>
+          </g>
+        </g>
+      )}
+
+      {/* Person detection box */}
+      {showPersonBox && (
+        <g>
+          <rect
+            x="700" y="408" width="248" height="100"
+            fill="none"
+            stroke="#2dd4bf"
+            strokeWidth="1.8"
+          />
+          {/* Corner brackets accent */}
+          {[[700,408],[948,408],[948,508],[700,508]].map(([x,y], i) => {
+            const dx = i === 1 || i === 2 ? -12 : 12;
+            const dy = i >= 2 ? -12 : 12;
+            return (
+              <g key={i}>
+                <line x1={x} y1={y} x2={x+dx} y2={y} stroke="#2dd4bf" strokeWidth="2.5" />
+                <line x1={x} y1={y} x2={x} y2={y+dy} stroke="#2dd4bf" strokeWidth="2.5" />
+              </g>
+            );
+          })}
+          {/* Label */}
+          <g transform="translate(700, 388)">
+            <rect x="0" y="-14" width="108" height="18" rx="3" className="ov-label-bg" />
+            <text x="6" y="-1" className="ov-label">patient · 0.94</text>
+          </g>
+        </g>
+      )}
+
+      {/* Monitor crop indicator — dashed teal box around the monitor */}
+      {showMonitorCrop && (
+        <g>
+          <rect
+            x="1080" y="265" width="148" height="130"
+            fill="none"
+            stroke="#2dd4bf"
+            strokeWidth="1.4"
+            strokeDasharray="6 4"
+            opacity="0.85"
+          />
+          {/* Label */}
+          <g transform="translate(1080, 245)">
+            <rect x="0" y="-14" width="128" height="18" rx="3" className="ov-label-bg" />
+            <text x="6" y="-1" className="ov-label">monitor · OCR active</text>
+          </g>
+        </g>
+      )}
+    </svg>
+  );
+}
+
+Object.assign(window, { ICURoomScene, DetectionOverlay });
+</script>
+  <script type="text/babel" data-presets="env,react">/* global React, Icon, AidaMark, ThemeToggle */
+// Top bar + patient header strip + status pill menu.
+
+const { useState: useStateCh, useEffect: useEffectCh, useRef: useRefCh } = React;
+
+function TopBar({ theme, setTheme }) {
+  return (
+    <div className="top-bar">
+      <span className="mark"><AidaMark size={24} /></span>
+      <span className="crumbs" aria-label="Breadcrumb">
+        <span className="seg">Wards</span>
+        <span className="slash">/</span>
+        <span className="seg">ICU-2</span>
+        <span className="slash">/</span>
+        <span className="seg current">Bed 4</span>
+      </span>
+      <div className="right">
+        <span className="live-pill" title="Stream connected · 23 fps">
+          <span className="pulse" />
+          Live
+        </span>
+        <button
+          type="button"
+          className="icon-btn"
+          aria-label={`Switch to ${theme === "light" ? "dark" : "light"} theme`}
+          title={`Switch to ${theme === "light" ? "dark" : "light"} theme`}
+          onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+        >
+          <Icon name={theme === "light" ? "moon" : "sun"} size={16} />
+        </button>
+        <button
+          type="button"
+          className="icon-btn"
+          aria-label="Shortcuts"
+          title="Keyboard shortcuts"
+        >
+          <Icon name="command" size={16} />
+        </button>
+        <span className="avatar" title="Dr. R. Patel">RP</span>
+      </div>
+    </div>
+  );
+}
+
+// ----- Patient header strip --------------------------------------------------
+const STATUS_DEFS = {
+  Stable:   { tone: "tone-success",  dotTone: "success",  desc: "default" },
+  Watch:    { tone: "tone-warning",  dotTone: "warning",  desc: "elevated" },
+  Critical: { tone: "tone-critical", dotTone: "critical", desc: "alarm" },
+};
+
+function StatusPill({ status, onChange }) {
+  const [open, setOpen] = useStateCh(false);
+  const def = STATUS_DEFS[status];
+  return (
+    <div style={{ position: "relative", display: "inline-block" }}>
+      <button
+        type="button"
+        className={`status-pill ${def.tone}`}
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        title="Change patient status"
+      >
+        <span className="dot" />
+        {status}
+        <span className="caret"><Icon name="chevronDown" size={12} /></span>
+      </button>
+      {open && (
+        <>
+          <div className="popover-catch" onClick={() => setOpen(false)} />
+          <div className="status-menu" role="listbox">
+            {Object.entries(STATUS_DEFS).map(([k, v]) => {
+              const cls = v.dotTone === "success" ? "s" : v.dotTone === "warning" ? "w" : "c";
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  className={`opt ${cls} ${k === status ? "active" : ""}`}
+                  onClick={() => { onChange(k); setOpen(false); }}
+                >
+                  <span className="dot" />
+                  <span>{k}</span>
+                  <span className="desc">{v.desc}</span>
+                  {k === status && <Icon name="check" size={14} className="check" />}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function PatientStrip({ patient, onStatusChange }) {
+  return (
+    <div className="p-strip">
+      <div className="ident">
+        <div className="name">{patient.name}</div>
+        <div className="meta">
+          {patient.age} / {patient.sex}
+          <span className="dot-sep">·</span>
+          MRN: {patient.mrn}
+          <span className="dot-sep">·</span>
+          Bed {patient.bed}
+          <span className="dot-sep">·</span>
+          {patient.diagnosis}
+        </div>
+      </div>
+      <div className="spacer" />
+      <StatusPill status={patient.status} onChange={onStatusChange} />
+      <div className="spacer" />
+      <div className="code-status">
+        <span className="k">Code Status</span>
+        <span className="v">{patient.codeStatus}</span>
+      </div>
+      <button type="button" className="icon-btn" aria-label="More patient actions">
+        <Icon name="more" size={16} />
+      </button>
+    </div>
+  );
+}
+
+Object.assign(window, { TopBar, PatientStrip });
+</script>
+  <script type="text/babel" data-presets="env,react">/* global React, Icon */
+// Left rail: bed state, staff presence, vitals 2x2 grid, active alerts.
+
+const { useState: useStateLeft } = React;
+
+// ----- Tiny sparkline (drawn within vital-mini) --------------
+function MiniSpark({ data, color = "var(--brand)" }) {
+  if (!data || data.length < 2) return null;
+  const w = 64, h = 28;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const span = Math.max(max - min, 0.01);
+  const step = w / (data.length - 1);
+  const pts = data.map((v, i) => [i * step, h - ((v - min) / span) * (h - 4) - 2]);
+  const d = pts.map(([x, y], i) => (i === 0 ? `M${x},${y}` : `L${x},${y}`)).join(" ");
+  const dFill = d + ` L${w},${h} L0,${h} Z`;
+  return (
+    <svg className="v-spark" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+      <path d={dFill} fill={color} opacity="0.14" />
+      <path d={d} fill="none" stroke={color} strokeWidth="1.3" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+// ----- Combined bed + staff row -------------------------------
+function BedStaffRow({ bedState, staffState }) {
+  const bedToneMap = {
+    "In bed":          { iconTone: "tone-success",  iconName: "bed" },
+    "Sitting on edge": { iconTone: "tone-warning",  iconName: "bed" },
+    "Out of bed":      { iconTone: "tone-warning",  iconName: "footprints" },
+    "On floor":        { iconTone: "tone-critical", iconName: "shieldAlert" },
+    "Unknown":         { iconTone: "tone-neutral",  iconName: "circle" },
+  };
+  const bedCfg = bedToneMap[bedState.state] || bedToneMap["Unknown"];
+
+  const staffPresent = staffState.present;
+  const staffTone = staffPresent ? "tone-success" : (
+    staffState.absenceMinutes > 240 ? "tone-critical" :
+    staffState.absenceMinutes > 120 ? "tone-warning" : "tone-neutral"
+  );
+
+  return (
+    <div className="state-pair">
+      <div className="cell">
+        <div className="lbl">Bed state</div>
+        <div className="row">
+          <span className={`ico ${bedCfg.iconTone}`}>
+            <Icon name={bedCfg.iconName} size={14} />
+          </span>
+          <div className="txt">
+            <span className="state">{bedState.state}</span>
+            <span className="meta">Confirmed {bedState.confirmedAgo} ago</span>
+          </div>
+        </div>
+      </div>
+      <div className="cell">
+        <div className="lbl">Staff</div>
+        <div className="row">
+          <span className={`ico ${staffTone}`}>
+            <Icon name={staffPresent ? "userCheck" : "userX"} size={14} />
+          </span>
+          <div className="txt">
+            <span className="state">
+              {staffPresent ? "Present" : `Absent — ${staffState.lastVisitAgo}`}
+            </span>
+            <span className="meta">
+              {staffPresent ? "In room now" : `Last ${staffState.lastVisitTime}`}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ----- Generic state card (kept for reuse) -------------------
+function StateCard({ label, iconName, iconTone = "tone-neutral", state, meta, sub }) {
+  return (
+    <div className="mini-card">
+      <div className="lbl">{label}</div>
+      <div className="row">
+        <span className={`ico ${iconTone}`}>
+          <Icon name={iconName} size={16} />
+        </span>
+        <div className="txt">
+          <span className="state">{state}</span>
+          {meta && <span className="meta">{meta}</span>}
+        </div>
+        {sub}
+      </div>
+    </div>
+  );
+}
+
+// ----- Vitals grid -------------------------------------------
+function VitalMini({ label, value, unit, trend = "flat", source, warn = false, data }) {
+  const trendIcon = trend === "up" ? "arrowUp" : trend === "down" ? "arrowDown" : "arrowFlat";
+  const renderValue = () => {
+    if (typeof value === "string" && value.includes("/")) {
+      const [a, b] = value.split("/");
+      return (<><span>{a}</span><span className="slash">/</span><span>{b}</span></>);
+    }
+    return value;
+  };
+  const sparkColor = warn ? "var(--warning)" : "var(--brand)";
+  return (
+    <div className={"vital-mini" + (warn ? " warn" : "")}>
+      <div className="v-lbl">
+        {label}
+        <span className="trend"><Icon name={trendIcon} size={11} strokeWidth={2} /></span>
+      </div>
+      <div className="v-val">
+        <span className="v-num">{renderValue()}</span>
+        <span className="v-unit">{unit}</span>
+      </div>
+      <MiniSpark data={data} color={sparkColor} />
+      <div className="v-foot">Source: {source}</div>
+    </div>
+  );
+}
+
+function VitalsGrid({ vitals }) {
+  return (
+    <div className="vitals-grid">
+      <VitalMini label="HR"   value={vitals.hr.value}   unit={vitals.hr.unit}   trend={vitals.hr.trend}   source={vitals.hr.source}   data={vitals.hr.spark} />
+      <VitalMini label="BP"   value={vitals.bp.value}   unit={vitals.bp.unit}   trend={vitals.bp.trend}   source={vitals.bp.source}   data={vitals.bp.spark} />
+      <VitalMini label="SpO₂" value={vitals.spo2.value} unit={vitals.spo2.unit} trend={vitals.spo2.trend} source={vitals.spo2.source} data={vitals.spo2.spark} warn={vitals.spo2.warning} />
+      <VitalMini label="RR"   value={vitals.rr.value}   unit={vitals.rr.unit}   trend={vitals.rr.trend}   source={vitals.rr.source}   data={vitals.rr.spark} />
+    </div>
+  );
+}
+
+// ----- Active alerts panel -----------------------------------
+function AlertsPanel({ alerts, onDismiss, onReview }) {
+  return (
+    <div className="alerts-card">
+      <div className="head">
+        <span className="ttl">
+          Active alerts
+          <span className="count">({alerts.length})</span>
+        </span>
+        {alerts.length > 0 && (
+          <button type="button" className="clear" aria-label="Clear all alerts">Clear all</button>
+        )}
+      </div>
+      <div className="list">
+        {alerts.length === 0 && (
+          <div className="alerts-empty">No active alerts.</div>
+        )}
+        {alerts.map((a) => (
+          <div key={a.id} className={`alert-row tone-${a.severity}`}>
+            <span className="stripe" />
+            <div className="top">
+              <span className="icn">
+                <Icon name={a.severity === "critical" ? "shieldAlert" : "alert"} size={14} />
+              </span>
+              <span className="msg">{a.message}</span>
+            </div>
+            <div className="bot">
+              <span className="time">{a.time}</span>
+              <span className="spacer" />
+              <button type="button" className="ghost-btn" onClick={() => onReview(a)}>
+                Review →
+              </button>
+              <button
+                type="button"
+                className="x-btn"
+                aria-label="Dismiss alert"
+                onClick={() => onDismiss(a.id)}
+              >
+                <Icon name="x" size={13} />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ----- Left column composition -------------------------------
+function LeftColumn({ bedState, staffState, vitals, alerts, onDismissAlert, onReview }) {
+  return (
+    <div className="col left">
+      <BedStaffRow bedState={bedState} staffState={staffState} />
+      <VitalsGrid vitals={vitals} />
+      <AlertsPanel
+        alerts={alerts}
+        onDismiss={onDismissAlert}
+        onReview={onReview}
+      />
+    </div>
+  );
+}
+
+Object.assign(window, { LeftColumn });
+</script>
+  <script type="text/babel" data-presets="env,react">/* global React, Icon, ICURoomScene, DetectionOverlay */
+// Center column: video feed with overlays + event timeline.
+
+const { useState: useStateCenter, useRef: useRefCenter, useEffect: useEffectCenter } = React;
+
+// ----- Camera source dropdown ---------------------------------
+const CAMERAS = [
+  { id: "bedside-1", label: "Bedside Cam 1", group: "Live" },
+  { id: "wall-wide", label: "Wall Cam (Wide)", group: "Live" },
+];
+const SWITCH_OPTS = [
+  { id: "synthetic", label: "Switch to synthetic feed" },
+  { id: "rtsp",      label: "Switch to RTSP stream…" },
+  { id: "file",      label: "Switch to file…" },
+];
+
+function CameraDropdown({ active, onChange }) {
+  const [open, setOpen] = useStateCenter(false);
+  const activeLabel = CAMERAS.find((c) => c.id === active)?.label
+                    || SWITCH_OPTS.find((c) => c.id === active)?.label
+                    || "Camera";
+  return (
+    <div className="cam-dropdown">
+      <button
+        type="button"
+        className="cam-trigger"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <Icon name="video" size={14} className="cam-ico" />
+        <span>{activeLabel}</span>
+        <Icon name="chevronDown" size={12} />
+      </button>
+      {open && (
+        <>
+          <div className="popover-catch" onClick={() => setOpen(false)} />
+          <div className="cam-menu" role="listbox">
+            <div className="group">Live</div>
+            {CAMERAS.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className={`item ${c.id === active ? "active" : ""}`}
+                onClick={() => { onChange(c.id); setOpen(false); }}
+              >
+                <Icon name="video" size={13} />
+                <span style={{ flex: 1 }}>{c.label}</span>
+                {c.id === active && <Icon name="check" size={13} className="check" />}
+              </button>
+            ))}
+            <div className="sep" />
+            <div className="group">Source</div>
+            {SWITCH_OPTS.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className={`item ${c.id === active ? "active" : ""}`}
+                onClick={() => { onChange(c.id); setOpen(false); }}
+              >
+                <Icon name="refresh" size={13} />
+                <span style={{ flex: 1 }}>{c.label}</span>
+                {c.id === active && <Icon name="check" size={13} className="check" />}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ----- Video feed --------------------------------------------
+function VideoFeed({
+  activeCam,
+  onCamChange,
+  toastAlert,
+  onDismissToast,
+}) {
+  return (
+    <div className="video-card">
+      <div className="video-stage">
+        <ICURoomScene variant={activeCam} />
+        <DetectionOverlay />
+
+        {/* Top-left: active event toast */}
+        {toastAlert && (
+          <div className="vid-tl">
+            <div className="vid-event-toast" role="status">
+              <span className="dot" />
+              <span>{toastAlert.message}</span>
+              <button
+                type="button"
+                className="x"
+                aria-label="Dismiss"
+                onClick={onDismissToast}
+              >
+                <Icon name="x" size={12} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Top-right: camera dropdown */}
+        <div className="vid-tr">
+          <CameraDropdown active={activeCam} onChange={onCamChange} />
+        </div>
+
+        {/* Bottom-left: live badge */}
+        <div className="vid-bl">
+          <span className="live-badge">
+            <span className="rec" />
+            LIVE · 1080p · 23 fps
+          </span>
+        </div>
+
+        {/* Bottom-right: small ops */}
+        <div className="vid-br">
+          <button type="button" className="vid-iconbtn" aria-label="Audio" title="Toggle audio">
+            <Icon name="mic" size={14} />
+          </button>
+          <button type="button" className="vid-iconbtn" aria-label="Fullscreen" title="Fullscreen">
+            <Icon name="expand" size={14} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ----- Event timeline (swim-lane) ----------------------------
+// Catmull-Rom -> cubic Bezier helper for smooth trace curves.
+function smoothPath(pts) {
+  if (pts.length < 2) return "";
+  if (pts.length === 2) return `M${pts[0][0]},${pts[0][1]} L${pts[1][0]},${pts[1][1]}`;
+  let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] || pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] || p2;
+    const t = 0.18;
+    const c1x = p1[0] + (p2[0] - p0[0]) * t;
+    const c1y = p1[1] + (p2[1] - p0[1]) * t;
+    const c2x = p2[0] - (p3[0] - p1[0]) * t;
+    const c2y = p2[1] - (p3[1] - p1[1]) * t;
+    d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+  }
+  return d;
+}
+
+function parseAgo(s) {
+  let m = 0;
+  const hm = s.match(/(\d+)\s*h/);
+  if (hm) m += parseInt(hm[1], 10) * 60;
+  const mm = s.match(/(\d+)\s*m/);
+  if (mm) m += parseInt(mm[1], 10);
+  return m;
+}
+
+const LANES = [
+  { id: "critical", label: "Critical", filterKey: "critical" },
+  { id: "warning",  label: "Warning",  filterKey: "warning" },
+  { id: "info",     label: "Events",   filterKey: "info" },
+];
+
+// Time tick definitions
+const TL_TICKS = [
+  { label: "4h ago", frac: 0,    pos: "first" },
+  { label: "3h",     frac: 0.25, pos: "mid" },
+  { label: "2h",     frac: 0.50, pos: "mid" },
+  { label: "1h",     frac: 0.75, pos: "mid" },
+  { label: "Now",    frac: 1,    pos: "last" },
+];
+
+function EventTimelinePanel({ events, vitals, filters, setFilters, onEventClick }) {
+  const [hovered, setHovered] = useStateCenter(null);
+  const [mutedTraces, setMutedTraces] = useStateCenter(new Set());
+
+  function fracForAgo(mins) { return Math.max(0, Math.min(1, (240 - mins) / 240)); }
+
+  // Bucket events by lane (severity)
+  const byLane = { critical: [], warning: [], info: [] };
+  events.forEach((e) => {
+    const lane = e.severity === "critical" ? "critical"
+              : e.severity === "warning" ? "warning"
+              : "info";
+    byLane[lane].push(e);
+  });
+
+  function isVisible(e) {
+    if (filters.has("all")) return true;
+    if (e.type.includes("VITAL") && filters.has("vitals")) return true;
+    return filters.has(e.severity);
+  }
+  function toggleFilter(key) {
+    const next = new Set(filters);
+    if (key === "all") { next.clear(); next.add("all"); }
+    else {
+      next.delete("all");
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      if (next.size === 0) next.add("all");
+    }
+    setFilters(next);
+  }
+
+  function toggleTrace(key) {
+    const next = new Set(mutedTraces);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    setMutedTraces(next);
+  }
+
+  // Vital traces — brand teal for HR, semantic colors for the rest.
+  const traces = [
+    { key: "hr",   data: vitals.hr.spark,   color: "var(--brand)",   label: "HR",   value: vitals.hr.value + " bpm" },
+    { key: "bp",   data: vitals.bp.spark,   color: "var(--info)",    label: "BP",   value: vitals.bp.value },
+    { key: "spo2", data: vitals.spo2.spark, color: "var(--warning)", label: "SpO₂", value: vitals.spo2.value + "%" },
+    { key: "rr",   data: vitals.rr.spark,   color: "var(--fg-2)",    label: "RR",   value: vitals.rr.value + "/min" },
+  ];
+
+  // SVG viewBox for the vitals lane
+  const VW = 1000, VH = 48;
+  const traceTop = 4, traceBot = VH - 4;
+  const traceH = traceBot - traceTop;
+
+  function tracePoints(data) {
+    if (!data || data.length < 2) return [];
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+    const span = Math.max(max - min, 0.01);
+    const n = data.length;
+    return data.map((v, i) => {
+      const x = (i / (n - 1)) * VW;
+      const y = traceBot - ((v - min) / span) * traceH;
+      return [x, y];
+    });
+  }
+
+  const counts = {
+    all: events.length,
+    critical: events.filter((e) => e.severity === "critical").length,
+    warning:  events.filter((e) => e.severity === "warning").length,
+    info:     events.filter((e) => e.severity === "info").length,
+    vitals:   events.filter((e) => e.type.includes("VITAL")).length,
+  };
+
+  return (
+    <div className="tl-card">
+      <div className="tl-head">
+        <div className="tl-title">
+          <span className="ttl">Event timeline</span>
+          <span className="rng">last 4 hours · {events.length} events</span>
+        </div>
+        <div className="tl-legend">
+          {traces.map((t) => (
+            <span
+              className={"leg" + (mutedTraces.has(t.key) ? " muted" : "")}
+              key={t.key}
+              onClick={() => toggleTrace(t.key)}
+              title={mutedTraces.has(t.key) ? `Show ${t.label}` : `Hide ${t.label}`}
+            >
+              <span className="leg-line" style={{ background: t.color }} />
+              <span className="leg-lbl">{t.label}</span>
+              <span className="leg-val">{t.value}</span>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="tl-grid">
+        {/* Now line — spans all rows, anchored to chart right edge */}
+        <div className="tl-now" style={{ left: "calc(100% - 24px)" }}>
+          <span className="tl-now-pulse" />
+        </div>
+
+        {/* Lane: Critical */}
+        <div className="tl-label critical" style={{ gridRow: "1 / 2" }}>
+          <span className="dot" /> Critical
+        </div>
+        <div className="tl-track" style={{ gridRow: "1 / 2" }}>
+          <span className="tl-row-band critical" style={{ top: 2, bottom: 2 }} />
+          <span className="baseline" />
+          {byLane.critical.map((e) => {
+            const frac = fracForAgo(parseAgo(e.ago));
+            const visible = isVisible(e);
+            return (
+              <button
+                key={e.id}
+                type="button"
+                className={`tl-mark critical big pulse${visible ? "" : " dim"}`}
+                style={{ left: `${frac * 100}%` }}
+                onMouseEnter={() => setHovered(e.id)}
+                onMouseLeave={() => setHovered((h) => (h === e.id ? null : h))}
+                onClick={() => onEventClick(e)}
+                aria-label={`${e.label}, ${e.ago} ago`}
+              >
+                {hovered === e.id && (
+                  <span className="tl-tip">
+                    <span className="t-lbl">{e.label}</span>
+                    <span className="t-time">{e.time} · {e.ago} ago</span>
+                    {e.desc && <span className="t-desc">{e.desc}</span>}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Lane: Warning */}
+        <div className="tl-label warning" style={{ gridRow: "2 / 3" }}>
+          <span className="dot" /> Warning
+        </div>
+        <div className="tl-track" style={{ gridRow: "2 / 3" }}>
+          <span className="tl-row-band warning" style={{ top: 2, bottom: 2 }} />
+          <span className="baseline" />
+          {byLane.warning.map((e) => {
+            const frac = fracForAgo(parseAgo(e.ago));
+            const visible = isVisible(e);
+            return (
+              <button
+                key={e.id}
+                type="button"
+                className={`tl-mark warning big${visible ? "" : " dim"}`}
+                style={{ left: `${frac * 100}%` }}
+                onMouseEnter={() => setHovered(e.id)}
+                onMouseLeave={() => setHovered((h) => (h === e.id ? null : h))}
+                onClick={() => onEventClick(e)}
+                aria-label={`${e.label}, ${e.ago} ago`}
+              >
+                {hovered === e.id && (
+                  <span className="tl-tip">
+                    <span className="t-lbl">{e.label}</span>
+                    <span className="t-time">{e.time} · {e.ago} ago</span>
+                    {e.desc && <span className="t-desc">{e.desc}</span>}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Lane: Events (info) */}
+        <div className="tl-label info" style={{ gridRow: "3 / 4" }}>
+          <span className="dot" /> Events
+        </div>
+        <div className="tl-track" style={{ gridRow: "3 / 4" }}>
+          <span className="baseline" />
+          {byLane.info.map((e) => {
+            const frac = fracForAgo(parseAgo(e.ago));
+            const visible = isVisible(e);
+            return (
+              <button
+                key={e.id}
+                type="button"
+                className={`tl-mark info${visible ? "" : " dim"}`}
+                style={{ left: `${frac * 100}%` }}
+                onMouseEnter={() => setHovered(e.id)}
+                onMouseLeave={() => setHovered((h) => (h === e.id ? null : h))}
+                onClick={() => onEventClick(e)}
+                aria-label={`${e.label}, ${e.ago} ago`}
+              >
+                {hovered === e.id && (
+                  <span className="tl-tip">
+                    <span className="t-lbl">{e.label}</span>
+                    <span className="t-time">{e.time} · {e.ago} ago</span>
+                    {e.desc && <span className="t-desc">{e.desc}</span>}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Lane: Vitals (trace chart) */}
+        <div className="tl-label vitals" style={{ gridRow: "4 / 5" }}>
+          <span className="dot" /> Vitals
+        </div>
+        <div className="tl-track vitals-track" style={{ gridRow: "4 / 5" }}>
+          <svg
+            className="vitals-svg"
+            viewBox={`0 0 ${VW} ${VH}`}
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            {/* Soft grid - the lane baseline at 50% */}
+            <line
+              x1="0" x2={VW}
+              y1={VH / 2} y2={VH / 2}
+              stroke="var(--border)"
+              strokeWidth="1"
+              vectorEffect="non-scaling-stroke"
+              opacity="0.5"
+            />
+            {/* Hour tick guides */}
+            {TL_TICKS.map((t, i) => (
+              <line
+                key={i}
+                x1={t.frac * VW} x2={t.frac * VW}
+                y1="2" y2={VH - 2}
+                stroke="var(--border)"
+                strokeDasharray="1.5 3"
+                strokeWidth="1"
+                vectorEffect="non-scaling-stroke"
+                opacity="0.4"
+              />
+            ))}
+            {/* Vital traces */}
+            {traces.map((t) => mutedTraces.has(t.key) ? null : (
+              <path
+                key={t.key}
+                d={smoothPath(tracePoints(t.data))}
+                fill="none"
+                stroke={t.color}
+                strokeWidth="1.5"
+                vectorEffect="non-scaling-stroke"
+                opacity="0.65"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+            ))}
+          </svg>
+        </div>
+
+        {/* Time axis */}
+        <div className="tl-axis" style={{ gridRow: "5 / 6" }}>
+          {TL_TICKS.map((t) => (
+            <React.Fragment key={t.label}>
+              <span className="tick-mark" style={{ left: `${t.frac * 100}%` }} />
+              <span
+                className={`tick ${t.pos === "first" ? "first" : t.pos === "last" ? "last" : ""}`}
+                style={{ left: `${t.frac * 100}%` }}
+              >
+                {t.label}
+              </span>
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+
+      {/* Filter chips */}
+      <div className="tl-filters">
+        {[
+          { key: "all",      label: "All events", count: counts.all,      dot: null       },
+          { key: "critical", label: "Critical",   count: counts.critical, dot: "critical" },
+          { key: "warning",  label: "Warning",    count: counts.warning,  dot: "warning"  },
+          { key: "info",     label: "Events",     count: counts.info,     dot: "info"     },
+          { key: "vitals",   label: "Vitals only",count: counts.vitals,   dot: null       },
+        ].map((f) => (
+          <button
+            key={f.key}
+            type="button"
+            className={`tl-chip ${filters.has(f.key) ? "active" : ""}`}
+            onClick={() => toggleFilter(f.key)}
+          >
+            {f.dot && <span className={`ch-dot ${f.dot}`} />}
+            <span>{f.label}</span>
+            <span className="ch-count">{f.count}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+// ----- Center column composition -----------------------------
+function CenterColumn(props) {
+  return (
+    <div className="col center">
+      <VideoFeed
+        activeCam={props.activeCam}
+        onCamChange={props.onCamChange}
+        toastAlert={props.toastAlert}
+        onDismissToast={props.onDismissToast}
+      />
+      <EventTimelinePanel
+        events={props.events}
+        vitals={props.vitals}
+        filters={props.filters}
+        setFilters={props.setFilters}
+        onEventClick={props.onEventClick}
+      />
+    </div>
+  );
+}
+
+Object.assign(window, { CenterColumn });
+</script>
+  <script type="text/babel" data-presets="env,react">/* global React, Icon, AidaMark */
+// Right column: Ask Aida assistant panel.
+
+const { useState: useStateAida, useRef: useRefAida, useEffect: useEffectAida } = React;
+
+// Pre-canned responses keyed by the suggested-question chip label or freeform.
+const CANNED_REPLIES = {
+  "What needs review?": {
+    text: "Two items: (1) SpO₂ trended down from 99% to 94% between 06:42 and 07:14 — flagged as warning, no staff visit during the decline; (2) No staff visit logged in the last 2h 14m, exceeding the 2-hour soft threshold for ICU-2.",
+    cites: [
+      { icon: "📈", label: "SpO₂ trend 6:42–7:14" },
+      { icon: "👤", label: "Staff log" },
+    ],
+  },
+  "Show evidence for the SpO2 alert": {
+    text: "SpO₂ reading from the bedside monitor (Philips IntelliVue, OCR confidence 0.96) declined steadily: 99% at 06:42, 98% at 06:54, 96% at 07:06, 94% at 07:14. Decline rate 0.16%/min — above the 0.10%/min alert threshold. RR remained 18; HR 70 → 72.",
+    cites: [
+      { icon: "📊", label: "Vitals OCR 6:42–7:14" },
+      { icon: "⚠", label: "Alert 7:14 AM" },
+      { icon: "📈", label: "Trend rule" },
+    ],
+  },
+  "Was staff present?": {
+    text: "No. Last staff visit ended at 05:12 AM (charge nurse, ~6 min duration). No subsequent door-zone entries detected by Bedside Cam 1. The 4-hour timeline shows no staff-present spans after 05:12.",
+    cites: [
+      { icon: "👤", label: "Last staff visit 5:12 AM" },
+      { icon: "🎥", label: "Door-zone log" },
+    ],
+  },
+};
+
+// Initial chat history (3 example exchanges from the spec).
+const INITIAL_HISTORY = [
+  {
+    role: "user",
+    text: "What is happening in the room right now?",
+  },
+  {
+    role: "aida",
+    text: "The patient is in bed, resting. No staff has visited in the last 2 hours 14 minutes. Last vitals reading at 7:14 AM showed HR 72, BP 118/76, SpO₂ 94, RR 18. The SpO₂ dip from 99 to 94 was flagged as a warning at 7:14 AM and is being monitored.",
+    cites: [
+      { icon: "📊", label: "Vitals 7:14 AM" },
+      { icon: "⚠", label: "Event 7:14 AM" },
+      { icon: "👤", label: "Last staff visit 5:12 AM" },
+    ],
+  },
+  {
+    role: "user",
+    text: "Did SpO₂ drop before the distress alert?",
+  },
+  {
+    role: "aida",
+    text: "Yes. SpO₂ trended down from 99% at 6:42 AM to 94% by 7:14 AM. The decline started 32 minutes before the alert fired. There was no recorded staff visit during this window.",
+    cites: [
+      { icon: "📈", label: "SpO₂ trend 6:42–7:14" },
+      { icon: "⚠", label: "Alert 7:14 AM" },
+    ],
+  },
+  {
+    role: "user",
+    text: "Summarize the last hour.",
+  },
+  {
+    role: "aida",
+    text: "Between 6:30 AM and 7:30 AM: SpO₂ declined from 99% to 94%, prompting an automated alert at 7:14 AM. No staff visited the room during this period. The patient remained in bed throughout. HR and BP remained stable. Position changed slightly at 7:26 AM, possibly indicating discomfort.",
+    cites: [
+      { icon: "📊", label: "Vitals" },
+      { icon: "📍", label: "Position 7:26 AM" },
+      { icon: "👤", label: "Staff log" },
+    ],
+  },
+];
+
+const SUGGESTED = [
+  "What needs review?",
+  "Show evidence for the SpO2 alert",
+  "Was staff present?",
+];
+
+// ----- A single chat message ---------------------------------
+function ChatMessage({ msg, flashCiteIdx }) {
+  if (msg.role === "user") {
+    return (
+      <div className="msg user">
+        <span className="av" title="You">You</span>
+        <div className="bubble">{msg.text}</div>
+      </div>
+    );
+  }
+  if (msg.role === "thinking") {
+    return (
+      <div className="msg aida thinking">
+        <span className="av"><AidaMark size={14} /></span>
+        <div className="bubble">
+          <span className="dot-pulse" />
+          <span className="dot-pulse" />
+          <span className="dot-pulse" />
+          <span style={{ marginLeft: 4 }}>Aida is checking the timeline…</span>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="msg aida">
+      <span className="av"><AidaMark size={14} /></span>
+      <div className="bubble">
+        <div className="who">Aida</div>
+        <div>{msg.text}</div>
+        {msg.cites && msg.cites.length > 0 && (
+          <div className="aida-cites">
+            {msg.cites.map((c, i) => (
+              <button
+                key={i}
+                type="button"
+                className={"aida-cite" + (flashCiteIdx === i ? " flash" : "")}
+                title="Open evidence"
+              >
+                <span aria-hidden="true">{c.icon}</span>
+                <span>{c.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ----- Summary card (collapsible — collapsed by default) -----
+function SummaryCard() {
+  const [open, setOpen] = useStateAida(false);
+  return (
+    <div className={"aida-summary" + (open ? " open" : "")}>
+      <button
+        type="button"
+        className="sum-head"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-controls="aida-summary-body"
+      >
+        <span className="lbl">Summary</span>
+        <span className="preview">
+          {open ? "Patient context" : "58 M · Day 4 post-op · Stable, recent SpO₂ dip 7:14"}
+        </span>
+        <span className="caret"><Icon name="chevronDown" size={14} /></span>
+      </button>
+      <div id="aida-summary-body" className="sum-body">
+        A 58-year-old male, Day 4 post-cholecystectomy. Currently in ICU-2 with stable vitals trending toward discharge readiness. Recent SpO₂ dip noted at 7:14 AM, currently being monitored. No falls or critical events in the last 24 hours.{" "}
+        Admitted 14 May after elective laparoscopic cholecystectomy; uncomplicated intra-op course. Transient fever (38.2 °C) on Day 1, resolved with acetaminophen. Ambulating with assistance since Day 2. NKDA. Anticoagulation per protocol.
+      </div>
+    </div>
+  );
+}
+
+// ----- Right column composition ------------------------------
+function RightColumn({ open = true, onToggle }) {
+  const [history, setHistory] = useStateAida(INITIAL_HISTORY);
+  const [input, setInput] = useStateAida("");
+  const [usedSuggested, setUsedSuggested] = useStateAida(new Set());
+  const [thinking, setThinking] = useStateAida(false);
+  const chatRef = useRefAida(null);
+
+  // Scroll chat to bottom on history change.
+  useEffectAida(() => {
+    const el = chatRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [history.length, thinking, open]);
+
+  function pushUser(text) {
+    setHistory((h) => [...h, { role: "user", text }]);
+  }
+  function pushAida(reply) {
+    setHistory((h) => [...h, { role: "aida", text: reply.text, cites: reply.cites }]);
+  }
+
+  function askSuggested(label) {
+    if (usedSuggested.has(label) || thinking) return;
+    pushUser(label);
+    setUsedSuggested((s) => new Set([...s, label]));
+    setThinking(true);
+    setTimeout(() => {
+      const reply = CANNED_REPLIES[label] || {
+        text: "I'd need more time on this dataset to answer confidently. Surface the question to the charge nurse?",
+        cites: [],
+      };
+      pushAida(reply);
+      setThinking(false);
+    }, 750);
+  }
+
+  function submitFreeform(e) {
+    e && e.preventDefault();
+    const q = input.trim();
+    if (!q || thinking) return;
+    pushUser(q);
+    setInput("");
+    setThinking(true);
+    setTimeout(() => {
+      let reply = null;
+      const lower = q.toLowerCase();
+      if (lower.includes("spo") || lower.includes("oxygen")) reply = CANNED_REPLIES["Show evidence for the SpO2 alert"];
+      else if (lower.includes("staff") || lower.includes("nurse") || lower.includes("visit")) reply = CANNED_REPLIES["Was staff present?"];
+      else if (lower.includes("review") || lower.includes("flag")) reply = CANNED_REPLIES["What needs review?"];
+      else reply = {
+        text: `I checked the last 4 hours of data for "${q}". Vitals are within expected ranges except SpO₂ (94%, warning). The patient has been in bed throughout. Would you like me to expand the window to the full shift?`,
+        cites: [
+          { icon: "📊", label: "Vitals last 4h" },
+          { icon: "🛏", label: "Bed state" },
+        ],
+      };
+      pushAida(reply);
+      setThinking(false);
+    }, 850);
+  }
+
+  const allUsed = SUGGESTED.every((s) => usedSuggested.has(s));
+
+  if (!open) {
+    return (
+      <div className="col right">
+        <div className="aida-rail">
+          <span className="mk"><AidaMark size={22} /></span>
+          <button
+            type="button"
+            className="reopen"
+            aria-label="Open Ask Aida panel"
+            title="Open panel"
+            onClick={onToggle}
+          >
+            <Icon name="panelRightOpen" size={15} />
+          </button>
+          <span className="vlabel">Ask Aida</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="col right">
+      <div className="aida-panel">
+        <div className="aida-head">
+          <span className="mk"><AidaMark size={18} /></span>
+          <span className="ttl">Ask Aida</span>
+          <span className="sub">grounded · this room</span>
+          <button
+            type="button"
+            className="collapse-btn"
+            aria-label="Collapse Ask Aida panel"
+            title="Collapse panel"
+            onClick={onToggle}
+          >
+            <Icon name="panelRightClose" size={15} />
+          </button>
+        </div>
+
+        <SummaryCard />
+
+        <div className="aida-chat" ref={chatRef}>
+          {history.map((m, i) => (
+            <ChatMessage key={i} msg={m} />
+          ))}
+          {thinking && <ChatMessage msg={{ role: "thinking" }} />}
+        </div>
+
+        <div className="aida-input-wrap">
+          {!allUsed && (
+            <div className="aida-suggested">
+              {SUGGESTED.filter((s) => !usedSuggested.has(s)).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className="suggested-chip"
+                  onClick={() => askSuggested(s)}
+                  disabled={thinking}
+                >
+                  <span className="pl">↳</span>{s}
+                </button>
+              ))}
+            </div>
+          )}
+          <form className="aida-input" onSubmit={submitFreeform}>
+            <input
+              type="text"
+              placeholder="Ask about this patient…"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              disabled={thinking}
+              aria-label="Ask Aida"
+            />
+            <button
+              type="submit"
+              className="send"
+              aria-label="Send"
+              disabled={!input.trim() || thinking}
+            >
+              <Icon name="send" size={14} />
+            </button>
+          </form>
+          <div className="aida-foot">
+            Answers grounded in this room's data. <span className="kbd">⌘</span><span className="kbd">K</span> for shortcuts.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { RightColumn });
+</script>
+  <script type="text/babel" data-presets="env,react">/* global React, ReactDOM, Icon, AidaMark, useTheme,
+   TopBar, PatientStrip,
+   LeftColumn, CenterColumn, RightColumn */
+// Main app — wires state, the modal, and the three columns.
+
+(function () {
+try {
+
+const { useState, useEffect, useMemo } = React;
+
+// ----- Mock data (per spec) ----------------------------------
+const INITIAL_PATIENT = {
+  name: "George Vattoli",
+  age: 58,
+  sex: "M",
+  mrn: "A-49231",
+  bed: "ICU-2",
+  diagnosis: "Day 4 post-cholecystectomy",
+  status: "Stable",
+  codeStatus: "Full Code",
+};
+
+const VITALS = {
+  hr:   { value: 72,       unit: "bpm",  trend: "down", source: "Monitor OCR", lastUpdate: "2s ago",
+          // Stable around 70-74, slight rise at end with the SpO2 event
+          spark: [70,70,71,71,72,71,70,71,71,72,71,72,72,73,72,72,73,72,72,72,72] },
+  bp:   { value: "118/76", unit: "mmHg", trend: "flat", source: "Monitor OCR", lastUpdate: "2s ago",
+          // Very stable, slight dip then return
+          spark: [120,120,119,118,118,117,117,118,118,119,118,118,117,118,118,118,118,118,118,118,118] },
+  spo2: { value: 94,       unit: "%",    trend: "down", source: "Monitor OCR", lastUpdate: "2s ago", warning: true,
+          // The story: stable 99 for first 3 hours, then steady decline starting at index 14 (≈30 min ago)
+          spark: [99,99,99,99,98,99,99,98,99,99,99,98,99,99,98,97,96,95,95,94,94] },
+  rr:   { value: 18,       unit: "/min", trend: "flat", source: "Monitor OCR", lastUpdate: "2s ago",
+          spark: [17,18,18,17,18,18,17,18,18,18,18,17,18,18,18,18,18,18,18,18,18] },
+};
+
+const BED_STATE   = { state: "In bed", confidence: 0.94, confirmedAgo: "2s" };
+const STAFF_STATE = { present: false, lastVisitAgo: "2h 14m", lastVisitTime: "5:12 AM", absenceMinutes: 134 };
+
+const INITIAL_ALERTS = [
+  { id: 1, severity: "warning",  message: "No movement detected for 3 hours",                 time: "1h 02m ago" },
+  { id: 2, severity: "critical", message: "SpO₂ trending down — 99 → 94 over 30 min",         time: "18m ago" },
+];
+
+const TIMELINE_EVENTS = [
+  { id: 1, type: "STAFF_VISIT_STARTED",     severity: "info",     ago: "3h 12m", label: "Staff visit",          desc: "Charge nurse entered the room",        time: "04:18 AM" },
+  { id: 2, type: "POSITION_CHANGE",         severity: "info",     ago: "2h 50m", label: "Position change",      desc: "Patient repositioned (assisted)",       time: "04:40 AM" },
+  { id: 3, type: "STAFF_VISIT_ENDED",       severity: "info",     ago: "2h 18m", label: "Staff visit ended",    desc: "Last logged staff presence",            time: "05:12 AM" },
+  { id: 4, type: "VITAL_READING_ACCEPTED",  severity: "info",     ago: "1h 45m", label: "Vitals accepted",      desc: "OCR confidence 0.96",                   time: "05:45 AM" },
+  { id: 5, type: "NO_MOVEMENT_SUSTAINED",   severity: "warning",  ago: "1h 02m", label: "No movement detected", desc: "3h cumulative immobility threshold",    time: "06:28 AM" },
+  { id: 6, type: "VITALS_OUT_OF_RANGE",     severity: "critical", ago: "18m",    label: "SpO₂ trending down",   desc: "99% → 94% over 30 min",                  time: "07:14 AM" },
+  { id: 7, type: "POSITION_CHANGE",         severity: "info",     ago: "4m",     label: "Position change",      desc: "Patient shifted (unassisted)",          time: "07:28 AM" },
+];
+
+// ----- Event modal -------------------------------------------
+function EventModal({ event, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  if (!event) return null;
+
+  const sev = event.severity;
+  const sevLabel = sev === "critical" ? "Critical" : sev === "warning" ? "Warning" : "Info";
+
+  return (
+    <div className="scrim" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <div className="head">
+          <span style={{
+            width: 8, height: 8, borderRadius: "50%",
+            background: `var(--${sev === "info" ? "info" : sev})`,
+            display: "inline-block",
+          }} />
+          <span className="ttl">{event.label}</span>
+          <span className="meta">{event.type}</span>
+          <button
+            type="button"
+            className="btn sm tertiary icon"
+            aria-label="Close"
+            onClick={onClose}
+            style={{ marginLeft: 8 }}
+          >
+            <Icon name="x" size={14} />
+          </button>
+        </div>
+        <div className="body">
+          <div className="field-row">
+            <span className="k">Time</span>
+            <span className="v mono">{event.time} · {event.ago} ago</span>
+          </div>
+          <div className="field-row">
+            <span className="k">Severity</span>
+            <span className="v">
+              <span style={{
+                display: "inline-block", width: 6, height: 6, borderRadius: "50%",
+                background: `var(--${sev === "info" ? "info" : sev})`,
+                marginRight: 8, verticalAlign: "middle",
+              }} />
+              {sevLabel}
+            </span>
+          </div>
+          <div className="field-row">
+            <span className="k">Source</span>
+            <span className="v mono">Bedside Cam 1 · rule engine</span>
+          </div>
+          <div className="field-row">
+            <span className="k">Description</span>
+            <span className="v">{event.desc}</span>
+          </div>
+          <div className="field-row">
+            <span className="k">Confidence</span>
+            <span className="v mono">0.94</span>
+          </div>
+        </div>
+        <div className="foot">
+          <span className="note">Stub — full Event Review pending</span>
+          <span className="actions">
+            <button type="button" className="btn sm secondary" onClick={onClose}>Dismiss</button>
+            <button type="button" className="btn sm primary" onClick={onClose}>Open in review</button>
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ----- App ---------------------------------------------------
+function App() {
+  const [theme, setTheme] = useTheme();
+  const [patient, setPatient] = useState(INITIAL_PATIENT);
+  const [alerts, setAlerts]   = useState(INITIAL_ALERTS);
+  const [filters, setFilters] = useState(new Set(["all"]));
+  const [activeCam, setActiveCam] = useState("bedside-1");
+  const [openEvent, setOpenEvent] = useState(null);
+  const [showVideoToast, setShowVideoToast] = useState(true);
+  const [aidaOpen, setAidaOpen] = useState(true);
+
+  function cycleStatus(next) {
+    setPatient((p) => ({ ...p, status: next }));
+  }
+  function dismissAlert(id) {
+    setAlerts((a) => a.filter((x) => x.id !== id));
+  }
+  function reviewAlert(a) {
+    const ev = TIMELINE_EVENTS.find((e) => e.message === a.message)
+            || TIMELINE_EVENTS.find((e) => e.severity === a.severity);
+    if (ev) setOpenEvent(ev);
+  }
+
+  const toastAlert = showVideoToast
+    ? (alerts.find((a) => a.severity === "warning") || alerts[0])
+    : null;
+
+  return (
+    <div className="app-shell">
+      <TopBar theme={theme} setTheme={setTheme} />
+      <PatientStrip patient={patient} onStatusChange={cycleStatus} />
+
+      <div className={"body" + (aidaOpen ? "" : " aida-closed")}>
+        <LeftColumn
+          bedState={BED_STATE}
+          staffState={STAFF_STATE}
+          vitals={VITALS}
+          alerts={alerts}
+          onDismissAlert={dismissAlert}
+          onReview={reviewAlert}
+        />
+        <CenterColumn
+          activeCam={activeCam}
+          onCamChange={setActiveCam}
+          toastAlert={toastAlert}
+          onDismissToast={() => setShowVideoToast(false)}
+          events={TIMELINE_EVENTS}
+          vitals={VITALS}
+          filters={filters}
+          setFilters={setFilters}
+          onEventClick={setOpenEvent}
+        />
+        <RightColumn open={aidaOpen} onToggle={() => setAidaOpen((o) => !o)} />
+      </div>
+
+      {openEvent && <EventModal event={openEvent} onClose={() => setOpenEvent(null)} />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+
+} catch (e) {
+  const r = document.getElementById("root");
+  if (r) r.innerHTML = '<pre style="padding:24px;font-family:monospace;font-size:12px;color:#E11D48;white-space:pre-wrap;line-height:1.4;">RENDER ERROR\n\n' + ((e && (e.stack || e.message)) || String(e)) + '</pre>';
+  throw e;
+}
+})();
+</script>
+</body>
+</html>

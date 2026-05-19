@@ -51,8 +51,8 @@ DEFAULT_BED_ID = "bed-01"
 DEFAULT_PATIENT_ID = "patient-private-room-01"
 
 DEFAULT_SETUP_CONFIG: dict[str, Any] = {
-    "source_type": "synthetic",
-    "source_url": "synthetic",
+    "source_type": "tablet_camera",
+    "source_url": "browser:local-camera",
     "camera_label": "Bedside Cam 1",
     "bed_zone_polygon": [[282, 400], [998, 400], [1018, 600], [262, 600]],
     "monitor_crop": {"enabled": True, "box": [1085, 270, 1225, 390]},
@@ -63,16 +63,16 @@ SETUP_CONFIGS: dict[str, dict[str, Any]] = {
 }
 UPLOADED_SOURCES: dict[str, Path] = {}
 ESCALATIONS: list[dict[str, Any]] = []
-USER_PREFERENCES: dict[str, Any] = {"density": "default"}
+USER_PREFERENCES: dict[str, Any] = {"density": "default", "theme": "light"}
 
 CAMERA_OPTIONS: list[dict[str, Any]] = [
     {
         "id": "bedside-1",
         "label": "Bedside Cam 1",
         "group": "live",
-        "source_type": "synthetic",
-        "source_url": "synthetic",
-        "description": "Primary bedside room camera. In this prototype it resolves to the synthetic one-bed stream unless a real source is configured.",
+        "source_type": "tablet_camera",
+        "source_url": "browser:local-camera",
+        "description": "Primary bedside room camera. In this prototype it uses the browser/tablet camera through getUserMedia on the monitor page.",
     },
     {
         "id": "wall-wide",
@@ -240,6 +240,7 @@ class CameraSelectRequest(BaseModel):
 
 class PreferencesRequest(BaseModel):
     density: str | None = None
+    theme: str | None = None
 
 
 class EscalationRequest(BaseModel):
@@ -370,7 +371,7 @@ def monitor_state(bed_id: str = DEFAULT_BED_ID) -> dict:
             "vlm": "gated",
             "assistant": "grounded",
             "memory": "events+vitals+evidence",
-            "medplum": "planned-fhir-shape",
+            "medplum": medplum_status_payload()["status"],
         },
         "evidence": {"status": "clip buffer", "retention": "event-scoped"},
         "recent_events": [event.model_dump(mode="json") for event in events[-12:]],
@@ -472,6 +473,35 @@ def escalate_event(event_id: str, req: EscalationRequest) -> dict:
         }
     )
     return {"ok": True, "event": event, "escalation": escalation}
+
+
+@app.post("/v0/bed/{bed_id}/alerts/clear")
+def clear_bed_alerts(bed_id: str) -> dict:
+    cleared: list[dict[str, Any]] = []
+    cleared_at = datetime.now(timezone.utc).isoformat()
+    for event in APP_EVENTS:
+        if event.get("status") not in {"acknowledged", "dismissed", "cleared"}:
+            event["status"] = "cleared"
+            event["cleared_at"] = cleared_at
+            cleared.append(event)
+            REVIEW_LOG.append(
+                {
+                    "event_id": event["id"],
+                    "action": "cleared",
+                    "note": "Cleared from active alerts panel.",
+                    "reviewer_id": "local-demo-user",
+                    "reviewed_at": cleared_at,
+                }
+            )
+    return {
+        "ok": True,
+        "bed_id": bed_id,
+        "cleared_count": len(cleared),
+        "cleared_events": cleared,
+        "active_alerts": [
+            event for event in APP_EVENTS if event.get("status") not in {"acknowledged", "dismissed", "cleared"}
+        ],
+    }
 
 
 @app.get("/v0/vitals/trend")
@@ -671,6 +701,10 @@ def update_preferences(req: PreferencesRequest) -> dict:
         if req.density not in {"compact", "default", "comfortable"}:
             raise HTTPException(status_code=400, detail="density must be compact, default, or comfortable")
         USER_PREFERENCES["density"] = req.density
+    if req.theme:
+        if req.theme not in {"light", "dark"}:
+            raise HTTPException(status_code=400, detail="theme must be light or dark")
+        USER_PREFERENCES["theme"] = req.theme
     return {"ok": True, "preferences": USER_PREFERENCES}
 
 
@@ -723,6 +757,41 @@ async def upload_test_video(
         "filename": safe_name,
         "stream_url": stream_url_for(f"upload:{source_id}", bed_id),
     }
+
+
+@app.post("/v0/audio/transcribe")
+async def upload_audio_clip(
+    audio: Annotated[UploadFile, File()],
+    bed_id: Annotated[str, Form()] = DEFAULT_BED_ID,
+    speaker: Annotated[str, Form()] = "room_mic",
+) -> dict:
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    safe_name = Path(audio.filename or "room-audio.webm").name
+    path = UPLOAD_DIR / f"audio-{timestamp_slug()}-{safe_name}"
+    with path.open("wb") as f:
+        shutil.copyfileobj(audio.file, f)
+    text = transcribe_audio_file(path) or "Audio clip captured. Speech transcription is not configured for this runtime."
+    record = {
+        "id": f"trn-{timestamp_slug()}",
+        "bed_id": bed_id,
+        "speaker": speaker,
+        "text": text,
+        "event_id": None,
+        "captured_at": datetime.now(timezone.utc).isoformat(),
+        "audio_path": str(path),
+    }
+    store.append_transcript(bed_id, record)
+    return {
+        "ok": True,
+        "bed_id": bed_id,
+        "transcribed": text != "Audio clip captured. Speech transcription is not configured for this runtime.",
+        "transcript": record,
+    }
+
+
+@app.get("/v0/integrations/medplum/status")
+def medplum_status() -> dict:
+    return {"ok": True, **medplum_status_payload()}
 
 
 @app.get("/v0/runs")
@@ -899,11 +968,29 @@ def stream_url_for(source_url: str, bed_id: str) -> str:
 def resolve_stream_source(source: str, bed_id: str) -> str:
     if source == "active":
         source = setup_config_for(bed_id).get("source_url", "synthetic") or "synthetic"
+    if source.startswith("browser:"):
+        return "synthetic"
     if source.startswith("upload:"):
         source_id = source.split(":", 1)[1]
         path = UPLOADED_SOURCES.get(source_id)
         return str(path) if path and path.exists() else "synthetic"
     return source
+
+
+def medplum_status_payload() -> dict[str, Any]:
+    configured = bool(os.getenv("MEDPLUM_BASE_URL") and os.getenv("MEDPLUM_CLIENT_ID"))
+    return {
+        "configured": configured,
+        "status": "configured-not-syncing" if configured else "planned-fhir-shape",
+        "base_url_set": bool(os.getenv("MEDPLUM_BASE_URL")),
+        "client_id_set": bool(os.getenv("MEDPLUM_CLIENT_ID")),
+        "resources": ["Patient", "Encounter", "Observation", "DocumentReference", "Task", "Communication"],
+        "notes": (
+            "FHIR resource mapping is scaffolded, but no Medplum writes are enabled yet."
+            if not configured
+            else "Credentials are present; write/sync worker still needs to be enabled explicitly."
+        ),
+    }
 
 
 def reference_assets() -> list[str]:
@@ -1077,6 +1164,25 @@ def ask_openai_assistant(message: str, bed_id: str) -> str | None:
             ],
         )
         return response.output_text.strip()
+    except Exception:
+        return None
+
+
+def transcribe_audio_file(path: Path) -> str | None:
+    load_local_env()
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return None
+    try:
+        from openai import OpenAI
+    except ImportError:
+        return None
+    try:
+        client = OpenAI(api_key=api_key, timeout=30)
+        model = os.getenv("OPENAI_AUDIO_TRANSCRIBE_MODEL", "whisper-1")
+        with path.open("rb") as audio_file:
+            response = client.audio.transcriptions.create(model=model, file=audio_file)
+        return getattr(response, "text", None)
     except Exception:
         return None
 

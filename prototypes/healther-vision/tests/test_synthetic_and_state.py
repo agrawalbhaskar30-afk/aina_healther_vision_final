@@ -256,12 +256,20 @@ def test_camera_source_selection_and_stream_url():
     assert body["active"]["camera_label"] == "Wall Cam (Wide)"
     assert f"bed_id={bed_id}" in body["stream_url"]
 
+    bedside = client.post(f"/v0/bed/{bed_id}/camera/select", json={"camera_id": "bedside-1"})
+    assert bedside.status_code == 200
+    assert bedside.json()["active"]["source_type"] == "tablet_camera"
+
 
 def test_preferences_validate_density():
     client = TestClient(app)
     response = client.patch("/v0/users/me/preferences", json={"density": "compact"})
     assert response.status_code == 200
     assert response.json()["preferences"]["density"] == "compact"
+
+    theme = client.patch("/v0/users/me/preferences", json={"theme": "dark"})
+    assert theme.status_code == 200
+    assert theme.json()["preferences"]["theme"] == "dark"
 
     bad = client.patch("/v0/users/me/preferences", json={"density": "crowded"})
     assert bad.status_code == 400
@@ -300,3 +308,37 @@ def test_escalation_updates_event_and_monitor_state():
     state = client.get("/v0/monitor/state?bed_id=bed-01").json()
     assert state["critical_count"] >= 1
     assert state["escalation"]["status"] == "open"
+
+
+def test_clear_active_alerts_marks_events_cleared():
+    client = TestClient(app)
+    response = client.post("/v0/bed/bed-01/alerts/clear", json={})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["cleared_count"] >= 1
+    assert body["active_alerts"] == []
+
+
+def test_audio_clip_upload_creates_transcript():
+    client = TestClient(app)
+    bed_id = "pytest-bed-audio"
+    response = client.post(
+        "/v0/audio/transcribe",
+        data={"bed_id": bed_id, "speaker": "room_mic"},
+        files={"audio": ("room-audio.webm", b"fake audio", "audio/webm")},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["ok"] is True
+    assert body["transcript"]["bed_id"] == bed_id
+    assert client.get(f"/v0/bed/{bed_id}/transcripts").json()["transcripts"][-1]["speaker"] == "room_mic"
+
+
+def test_medplum_status_exposes_planned_fhir_shape():
+    client = TestClient(app)
+    response = client.get("/v0/integrations/medplum/status")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["ok"] is True
+    assert "Observation" in body["resources"]
+    assert "api_key" not in json.dumps(body).lower()

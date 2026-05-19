@@ -2,6 +2,9 @@
   const api = window.AIDA_API_BASE || "";
   const page = window.AIDA_PAGE || "";
   const bedId = window.AIDA_BED_ID || "bed-01";
+  const VITALS_PAGE_SIZE = 10;
+  let activeVitals = null;
+  let localCameraStream = null;
 
   const postJson = async (url, body) => {
     const res = await fetch(api + url, {
@@ -87,18 +90,21 @@
       .aida-bridge-modal header{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border,rgba(148,163,184,.2))}
       .aida-bridge-modal h2{font-size:15px;margin:0;font-weight:700}
       .aida-bridge-modal .close{margin-left:auto;border:1px solid var(--border,rgba(148,163,184,.25));background:transparent;color:inherit;border-radius:7px;padding:6px 9px;cursor:pointer}
-      .aida-bridge-modal .body{padding:16px;max-height:calc(100vh - 110px);overflow:auto;min-width:0}
+      .aida-bridge-modal .body{display:block!important;padding:16px;max-height:calc(100vh - 110px);overflow-y:auto;overflow-x:hidden;min-width:0}
       .aida-bridge-table-wrap{max-width:100%;overflow:auto;border:1px solid var(--border,rgba(148,163,184,.16));border-radius:8px}
       .aida-bridge-table{width:100%;min-width:560px;border-collapse:collapse;font-family:var(--font-mono,monospace);font-size:12px}
       .aida-bridge-table th,.aida-bridge-table td{border-bottom:1px solid var(--border,rgba(148,163,184,.16));padding:8px;text-align:left}
-      .aida-bridge-vitals-layout{display:grid;grid-template-columns:minmax(220px,280px) minmax(0,1fr);gap:16px;align-items:start}
+      .aida-bridge-vitals-layout{display:grid;grid-template-columns:minmax(180px,240px) minmax(0,1fr);gap:16px;align-items:start;width:100%;max-width:100%;overflow:hidden}
       .aida-bridge-vitals-meta{color:var(--fg-2,#94a3b8);line-height:1.45}
       .aida-bridge-tabs{display:flex;gap:6px;margin:0 0 12px}
       .aida-bridge-tabs button{border:1px solid var(--border,rgba(148,163,184,.25));background:transparent;color:inherit;border-radius:7px;padding:6px 10px;cursor:pointer}
       .aida-bridge-tabs button.active{background:var(--brand-subtle,rgba(45,212,191,.12));border-color:var(--brand,rgba(45,212,191,.7));color:var(--brand,#2dd4bf)}
       .aida-bridge-panel[hidden]{display:none!important}
-      .aida-bridge-graph{height:320px;border:1px solid var(--border,rgba(148,163,184,.16));border-radius:8px;background:linear-gradient(180deg,rgba(45,212,191,.08),rgba(2,6,23,.02));padding:10px}
-      .aida-bridge-graph svg{display:block;width:100%;height:100%;overflow:visible}
+      .aida-bridge-graph{height:320px;width:100%;max-width:100%;min-width:0;overflow:hidden;border:1px solid var(--border,rgba(148,163,184,.16));border-radius:8px;background:linear-gradient(180deg,rgba(45,212,191,.08),rgba(2,6,23,.02));padding:10px;display:flex;flex-direction:column}
+      .aida-bridge-graph svg{display:block;width:100%;min-height:0;flex:1;overflow:hidden}
+      .aida-bridge-chart-controls{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 0;color:var(--fg-2,#94a3b8)}
+      .aida-bridge-chart-controls button{border:1px solid var(--border,rgba(148,163,184,.25));background:transparent;color:inherit;border-radius:7px;padding:5px 8px;cursor:pointer}
+      .aida-bridge-chart-controls button:disabled{opacity:.35;cursor:not-allowed}
       .aida-bridge-help-list{display:grid;gap:10px}
       .aida-bridge-help-list dt{font-weight:700;color:var(--fg-1,#fff);margin:0 0 2px}
       .aida-bridge-help-list dd{margin:0;color:var(--fg-2,#94a3b8);line-height:1.45}
@@ -110,7 +116,7 @@
       .aida-bridge-fullscreen{background:#020617!important}
       :root[data-density="compact"] .vital-mini{min-height:58px!important;padding:8px!important}
       :root[data-density="comfortable"] .vital-mini{min-height:92px!important;padding:14px!important}
-      @media (max-width: 820px){.aida-bridge-vitals-layout{grid-template-columns:1fr}.aida-bridge-graph{height:260px}}
+      @media (max-width: 820px){.aida-bridge-modal{width:calc(100vw - 20px);max-width:calc(100vw - 20px)}.aida-bridge-vitals-layout{grid-template-columns:1fr}.aida-bridge-graph{height:260px}}
     `;
     document.head.appendChild(style);
   }
@@ -189,6 +195,7 @@
       const y = height - pad - ((value - min) / span) * (height - pad * 2);
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     }).join(" ");
+    const pointList = points.split(" ");
     const firstTime = rows[0]?.at ? new Date(rows[0].at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
     const lastTime = rows.at(-1)?.at ? new Date(rows.at(-1).at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
     return `
@@ -199,16 +206,33 @@
         <text x="4" y="${pad + 4}" fill="currentColor" opacity=".72" font-size="12">${esc(max)}</text>
         <text x="4" y="${height - pad + 4}" fill="currentColor" opacity=".72" font-size="12">${esc(min)}</text>
         <polyline points="${points}" fill="none" stroke="var(--brand,#2dd4bf)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-        ${points.split(" ").map((point, index) => `<circle cx="${point.split(",")[0]}" cy="${point.split(",")[1]}" r="${index === points.split(" ").length - 1 ? 5 : 3}" fill="var(--brand,#2dd4bf)" />`).join("")}
+        ${pointList.map((point, index) => `<circle cx="${point.split(",")[0]}" cy="${point.split(",")[1]}" r="${index === pointList.length - 1 ? 5 : 3}" fill="var(--brand,#2dd4bf)" />`).join("")}
         <text x="${pad}" y="${height - 4}" fill="currentColor" opacity=".72" font-size="12">${esc(firstTime)}</text>
         <text x="${width - pad - 64}" y="${height - 4}" fill="currentColor" opacity=".72" font-size="12">${esc(lastTime)}</text>
       </svg>
     `;
   }
 
+  function graphPageHtml(rows, metric, page) {
+    const pageCount = Math.max(1, Math.ceil(rows.length / VITALS_PAGE_SIZE));
+    const safePage = Math.max(0, Math.min(page, pageCount - 1));
+    const pageRows = rows.slice(safePage * VITALS_PAGE_SIZE, (safePage + 1) * VITALS_PAGE_SIZE);
+    return `
+      ${graphSvg(pageRows, metric)}
+      <div class="aida-bridge-chart-controls">
+        <button type="button" data-vitals-page="${safePage - 1}" ${safePage <= 0 ? "disabled" : ""}>Previous</button>
+        <span>Page ${safePage + 1} of ${pageCount}</span>
+        <button type="button" data-vitals-page="${safePage + 1}" ${safePage >= pageCount - 1 ? "disabled" : ""}>Next</button>
+      </div>
+    `;
+  }
+
   async function showVitals(metric) {
     const data = await getJson(`/v0/bed/${encodeURIComponent(bedId)}/vitals/history?metric=${encodeURIComponent(metric)}`);
-    const rows = (data.rows || []).slice(-18);
+    const rows = (data.rows || []).slice(-60);
+    const initialPage = Math.max(0, Math.ceil(rows.length / VITALS_PAGE_SIZE) - 1);
+    activeVitals = { rows, metric, page: initialPage };
+    const tableRows = rows.slice(-18);
     const body = `
       <div class="aida-bridge-vitals-layout">
         <p class="aida-bridge-vitals-meta" style="margin:0">Previous ${esc(metric.toUpperCase())} history for ${esc(bedId)}<br>source: ${esc(data.source || "monitor_ocr")}<br>window ${esc(data.window || "")}<br>${metric === "bp" ? "Graph line uses systolic BP; table keeps systolic/diastolic." : "Graph and table use the same OCR history feed."}</p>
@@ -217,12 +241,12 @@
             <button type="button" class="active" data-vitals-view="graph">Graph</button>
             <button type="button" data-vitals-view="table">Table</button>
           </div>
-          <div class="aida-bridge-panel aida-bridge-graph" data-vitals-panel="graph">${graphSvg(rows, metric)}</div>
+          <div class="aida-bridge-panel aida-bridge-graph" data-vitals-panel="graph">${graphPageHtml(rows, metric, initialPage)}</div>
           <div class="aida-bridge-panel" data-vitals-panel="table" hidden>
             <div class="aida-bridge-table-wrap">
               <table class="aida-bridge-table">
                 <thead><tr><th>Time</th><th>Value</th><th>Unit</th><th>Confidence</th></tr></thead>
-                <tbody>${rows.map((r) => {
+                <tbody>${tableRows.map((r) => {
                   const time = r.at ? new Date(r.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "-";
                   return `<tr><td>${esc(time)}</td><td>${esc(vitalDisplayValue(r))}</td><td>${esc(r.unit || "")}</td><td>${esc(Math.round((r.confidence || 0) * 100))}%</td></tr>`;
                 }).join("")}</tbody>
@@ -261,10 +285,80 @@
   }
 
   function updateStream(streamUrl) {
+    stopLocalCamera();
     const img = document.getElementById("aida-live-stream");
     if (!img || !streamUrl) return;
+    img.style.display = "block";
     const separator = streamUrl.includes("?") ? "&" : "?";
     img.src = `${streamUrl}${separator}t=${Date.now()}`;
+  }
+
+  function ensureLocalCameraVideo() {
+    const stage = document.querySelector(".video-stage");
+    if (!stage) return null;
+    let video = document.getElementById("aida-local-camera");
+    if (video) return video;
+    video = document.createElement("video");
+    video.id = "aida-local-camera";
+    video.autoplay = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.setAttribute("aria-label", "Tablet bedside camera");
+    video.style.cssText = [
+      "position:absolute",
+      "inset:0",
+      "width:100%",
+      "height:100%",
+      "object-fit:cover",
+      "z-index:0",
+      "display:none",
+      "background:#020617",
+    ].join(";");
+    stage.prepend(video);
+    return video;
+  }
+
+  function stopLocalCamera() {
+    if (localCameraStream) {
+      localCameraStream.getTracks().forEach((track) => track.stop());
+      localCameraStream = null;
+    }
+    const video = document.getElementById("aida-local-camera");
+    if (video) {
+      video.pause();
+      video.srcObject = null;
+      video.style.display = "none";
+    }
+  }
+
+  async function startTabletCamera({ save = true } = {}) {
+    const video = ensureLocalCameraVideo();
+    const img = document.getElementById("aida-live-stream");
+    if (!video || !navigator.mediaDevices?.getUserMedia) {
+      addToast("Browser camera is unavailable; falling back to synthetic feed.");
+      updateStream(`/v0/monitor/stream.mjpg?bed_id=${encodeURIComponent(bedId)}&source=synthetic&scenario=normal&fps=4`);
+      return;
+    }
+    try {
+      if (save) {
+        await postJson(`/v0/bed/${encodeURIComponent(bedId)}/camera/select`, { camera_id: "bedside-1" });
+      }
+      stopLocalCamera();
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      });
+      localCameraStream = stream;
+      video.srcObject = stream;
+      video.style.display = "block";
+      if (img) img.style.display = "none";
+      await video.play().catch(() => {});
+      document.querySelector(".cam-trigger span:last-child")?.replaceChildren(document.createTextNode("Bedside Cam 1"));
+      addToast("Tablet camera is live for Bedside Cam 1.");
+    } catch (err) {
+      addToast("Camera permission denied or unavailable; using synthetic feed.");
+      updateStream(`/v0/monitor/stream.mjpg?bed_id=${encodeURIComponent(bedId)}&source=synthetic&scenario=normal&fps=4`);
+    }
   }
 
   function ensureTestFileInput() {
@@ -302,9 +396,7 @@
     const cleaned = text.replace(/\s+/g, " ").trim();
     try {
       if (cleaned.includes("Bedside Cam 1")) {
-        const data = await postJson(`/v0/bed/${encodeURIComponent(bedId)}/camera/select`, { camera_id: "bedside-1" });
-        updateStream(data.stream_url);
-        addToast("Bedside Cam 1 selected.");
+        await startTabletCamera();
       } else if (cleaned.includes("Wall Cam")) {
         const data = await postJson(`/v0/bed/${encodeURIComponent(bedId)}/camera/select`, { camera_id: "wall-wide" });
         updateStream(data.stream_url);
@@ -367,6 +459,46 @@
         </dl>
       `);
     }).catch(() => addToast("Could not load escalation status."));
+  }
+
+  function installThemePersistence() {
+    const storageGet = (key) => {
+      try { return window.localStorage?.getItem(key); } catch { return null; }
+    };
+    const storageSet = (key, value) => {
+      try { window.localStorage?.setItem(key, value); } catch {}
+    };
+    const stored = storageGet("aida-theme") || storageGet("aida-ref-theme");
+    if (stored === "dark" || stored === "light") {
+      document.documentElement.setAttribute("data-theme", stored);
+    }
+    let lastTheme = document.documentElement.getAttribute("data-theme") || stored || "light";
+    storageSet("aida-theme", lastTheme);
+    storageSet("aida-ref-theme", lastTheme);
+    patchJson("/v0/users/me/preferences", { theme: lastTheme }).catch(() => {});
+    const observer = new MutationObserver(() => {
+      const next = document.documentElement.getAttribute("data-theme") || "light";
+      if (next === lastTheme || !["light", "dark"].includes(next)) return;
+      lastTheme = next;
+      storageSet("aida-theme", next);
+      storageSet("aida-ref-theme", next);
+      patchJson("/v0/users/me/preferences", { theme: next }).catch(() => {});
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  }
+
+  function clearAlertsUi() {
+    document.querySelectorAll(".alert-row").forEach((row) => row.remove());
+    document.querySelectorAll(".alerts-card .count").forEach((count) => { count.textContent = "(0)"; });
+    document.querySelectorAll(".alerts-card .clear").forEach((button) => { button.style.display = "none"; });
+    const list = document.querySelector(".alerts-card .list");
+    if (list && !list.querySelector(".alerts-empty")) {
+      const empty = document.createElement("div");
+      empty.className = "alerts-empty";
+      empty.textContent = "No active alerts.";
+      list.appendChild(empty);
+    }
+    document.querySelectorAll(".alerts-empty").forEach((empty) => { empty.style.display = "block"; });
   }
 
   function showPatientActions(anchor) {
@@ -436,6 +568,9 @@
       if (!data.ok) return;
       const live = document.querySelector(".live-badge");
       if (live && data.camera) live.lastChild.textContent = ` LIVE · ${data.camera.type} · ${data.camera.fps} fps`;
+      if (data.camera?.source_type === "tablet_camera") {
+        startTabletCamera({ save: false });
+      }
     }).catch(() => {});
 
     document.querySelectorAll(".vital-mini,.vital-card").forEach((card) => {
@@ -473,14 +608,45 @@
         });
         return;
       }
+      const pageButton = event.target.closest("[data-vitals-page]");
+      if (pageButton && activeVitals) {
+        event.preventDefault();
+        const nextPage = Number(pageButton.dataset.vitalsPage);
+        if (!Number.isFinite(nextPage)) return;
+        activeVitals.page = Math.max(0, Math.min(nextPage, Math.ceil(activeVitals.rows.length / VITALS_PAGE_SIZE) - 1));
+        const panel = pageButton.closest("[data-vitals-panel='graph']");
+        if (panel) panel.innerHTML = graphPageHtml(activeVitals.rows, activeVitals.metric, activeVitals.page);
+        return;
+      }
       const cameraItem = event.target.closest(".cam-menu .item");
       if (cameraItem) {
         const text = cameraItem.textContent;
+        if (text.includes("file")) {
+          event.preventDefault();
+          ensureTestFileInput().click();
+          return;
+        }
+        if (text.includes("RTSP")) {
+          event.preventDefault();
+          selectCameraSource(text);
+          return;
+        }
         setTimeout(() => selectCameraSource(text), 0);
       }
       const button = event.target.closest("button");
       if (!button) return;
       const text = button.textContent.trim();
+      if (button.getAttribute("aria-label") === "Clear all alerts" || text === "Clear all") {
+        event.preventDefault();
+        event.stopPropagation();
+        postJson(`/v0/bed/${encodeURIComponent(bedId)}/alerts/clear`, {})
+          .then((data) => {
+            clearAlertsUi();
+            addToast(`${data.cleared_count || 0} active alert(s) cleared.`);
+          })
+          .catch(() => addToast("Could not clear active alerts."));
+        return;
+      }
       if (button.getAttribute("aria-label") === "Fullscreen") {
         event.preventDefault();
         const target = document.querySelector(".video-stage") || document.documentElement;
@@ -531,6 +697,7 @@
         const recognition = new Recognition();
         recognition.continuous = false;
         recognition.interimResults = false;
+        recognition.onerror = () => addToast("Speech recognition stopped. Trying audio clip capture instead.");
         recognition.onresult = async (event) => {
           const text = event.results?.[0]?.[0]?.transcript || "";
           if (!text) return;
@@ -543,17 +710,47 @@
         addToast("Listening for room audio...");
         return;
       }
-      const stream = await navigator.mediaDevices?.getUserMedia?.({ audio: true });
-      stream?.getTracks?.().forEach((track) => track.stop());
-      await postJson("/v0/transcripts", {
-        bed_id: bedId,
-        text: "Microphone permission granted. Browser speech recognition is unavailable, so audio capture is ready but not transcribed in this browser.",
-        speaker: "room_mic",
-      });
-      addToast("Mic permission granted. Transcript endpoint is ready.");
+      await recordAudioClip();
     } catch (err) {
       addToast("Mic access unavailable or denied.");
     }
+  }
+
+  async function recordAudioClip() {
+    const stream = await navigator.mediaDevices?.getUserMedia?.({ audio: true });
+    if (!stream) throw new Error("microphone unavailable");
+    if (!window.MediaRecorder) {
+      stream.getTracks().forEach((track) => track.stop());
+      await postJson("/v0/transcripts", {
+        bed_id: bedId,
+        text: "Microphone permission granted. Audio capture is available, but this browser cannot record clips for transcription.",
+        speaker: "room_mic",
+      });
+      addToast("Mic permission granted.");
+      return;
+    }
+    const chunks = [];
+    const recorder = new MediaRecorder(stream);
+    recorder.ondataavailable = (event) => {
+      if (event.data?.size) chunks.push(event.data);
+    };
+    recorder.onstop = async () => {
+      stream.getTracks().forEach((track) => track.stop());
+      const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+      const form = new FormData();
+      form.append("bed_id", bedId);
+      form.append("speaker", "room_mic");
+      form.append("audio", blob, "room-audio.webm");
+      const data = await postForm("/v0/audio/transcribe", form);
+      appendChat("user", data.transcript?.text || "Audio clip captured.");
+      refreshSummary().catch(() => {});
+      addToast(data.transcribed ? "Mic audio transcribed." : "Mic audio captured.");
+    };
+    recorder.start();
+    addToast("Recording a 5 second room audio clip...");
+    setTimeout(() => {
+      if (recorder.state === "recording") recorder.stop();
+    }, 5000);
   }
 
   function wireSetup() {
@@ -583,8 +780,8 @@
       }
       if (text.includes("Save & go live")) {
         await postJson(`/v0/bed/${encodeURIComponent(bedId)}/setup/config`, {
-          source_type: "synthetic",
-          source_url: "synthetic",
+          source_type: "tablet_camera",
+          source_url: "browser:local-camera",
           camera_label: "Bedside Cam 1",
         });
         addToast("Configuration saved. Opening monitor...");
@@ -632,6 +829,7 @@
   }
 
   ready(() => {
+    installThemePersistence();
     if (page === "monitor") wireMonitor();
     if (page === "setup") wireSetup();
     if (page === "review") wireReview();

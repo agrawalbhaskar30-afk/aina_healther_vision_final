@@ -5,7 +5,7 @@ import os
 import shutil
 import time
 from io import BytesIO
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -17,8 +17,17 @@ from pydantic import BaseModel, Field
 from .config import load_local_env
 from .dashboard import dashboard_html, list_runs, list_vlm_reports
 from .evaluation import event_metrics, expected_events_for_manifest
-from .models import CameraRole, Evidence, FrameAnalysis, SyntheticScenario
-from .state import MemoryStore, VisionStateMachine
+from .models import (
+    BedState,
+    CameraRole,
+    EventType,
+    Evidence,
+    FrameAnalysis,
+    IVState,
+    Severity,
+    SyntheticScenario,
+)
+from .state import VITAL_RULES, MemoryStore, VisionStateMachine, severity_for
 from .synthetic import analysis_for, render_frame
 
 load_local_env()
@@ -37,7 +46,10 @@ app.mount("/generated", StaticFiles(directory=GENERATED_DIR), name="generated")
 if MOCKUPS_DIR.exists():
     app.mount("/mockups", StaticFiles(directory=MOCKUPS_DIR), name="mockups")
 
-SETUP_CONFIG: dict[str, Any] = {
+DEFAULT_BED_ID = "bed-01"
+DEFAULT_PATIENT_ID = "patient-private-room-01"
+
+DEFAULT_SETUP_CONFIG: dict[str, Any] = {
     "source_type": "synthetic",
     "source_url": "synthetic",
     "camera_label": "Bedside Cam 1",
@@ -45,6 +57,47 @@ SETUP_CONFIG: dict[str, Any] = {
     "monitor_crop": {"enabled": True, "box": [1085, 270, 1225, 390]},
     "iv_oxygen_crop": {"enabled": False, "box": None},
 }
+SETUP_CONFIGS: dict[str, dict[str, Any]] = {
+    DEFAULT_BED_ID: json.loads(json.dumps(DEFAULT_SETUP_CONFIG))
+}
+
+REFERENCE_CASES: list[dict[str, Any]] = [
+    {
+        "id": "distress_wob",
+        "label": "Respiratory distress / work of breathing",
+        "signals": ["tachypnea", "accessory movement", "SpO2 trend", "oxygen interruption"],
+        "severity": "critical",
+        "review": "Remote clinician review and bedside nurse assessment",
+    },
+    {
+        "id": "iv_near_empty",
+        "label": "IV bag near empty or stopped",
+        "signals": ["IV crop", "bag fill percent", "line visibility"],
+        "severity": "warning",
+        "review": "Confirm line status before charting",
+    },
+    {
+        "id": "monitor_ocr",
+        "label": "Bedside monitor OCR",
+        "signals": ["HR", "BP", "SpO2", "RR", "confidence"],
+        "severity": "info",
+        "review": "Accept only stable OCR readings",
+    },
+    {
+        "id": "bed_state",
+        "label": "Bed state and fall risk",
+        "signals": ["in bed", "sitting edge", "out of bed", "on floor"],
+        "severity": "warning",
+        "review": "Critical if on-floor or fall-confirmed",
+    },
+    {
+        "id": "staff_presence",
+        "label": "Staff presence and care gaps",
+        "signals": ["staff in frame", "last seen", "no visit threshold"],
+        "severity": "info",
+        "review": "Useful for rounds, escalation, and audit trail",
+    },
+]
 
 APP_EVENTS: list[dict[str, Any]] = [
     {
@@ -116,6 +169,15 @@ class ReviewRequest(BaseModel):
 class AssistantRequest(BaseModel):
     message: str
     room_id: str = "private-room-01"
+    bed_id: str = DEFAULT_BED_ID
+    event_id: str | None = None
+
+
+class TranscriptRequest(BaseModel):
+    bed_id: str = DEFAULT_BED_ID
+    text: str
+    speaker: str = "room_audio"
+    captured_at: datetime | None = None
     event_id: str | None = None
 
 
@@ -185,32 +247,48 @@ def dashboard() -> str:
 
 @app.get("/monitor", response_class=HTMLResponse)
 def monitor() -> str:
-    return mockup_page("monitor/Aida - One-Bed Live Monitor.html", "monitor")
+    return mockup_page("monitor/Aida - One-Bed Live Monitor.html", "monitor", DEFAULT_BED_ID)
+
+
+@app.get("/bed/{bed_id}/monitor", response_class=HTMLResponse)
+def bed_monitor(bed_id: str) -> str:
+    return mockup_page("monitor/Aida - One-Bed Live Monitor.html", "monitor", bed_id)
 
 
 @app.get("/setup", response_class=HTMLResponse)
 @app.get("/video-setup", response_class=HTMLResponse)
 def setup_page() -> str:
-    return mockup_page("setup/index.html", "setup")
+    return mockup_page("setup/index.html", "setup", DEFAULT_BED_ID)
+
+
+@app.get("/bed/{bed_id}/setup", response_class=HTMLResponse)
+@app.get("/bed/{bed_id}/video-setup", response_class=HTMLResponse)
+def bed_setup_page(bed_id: str) -> str:
+    return mockup_page("setup/index.html", "setup", bed_id)
 
 
 @app.get("/review", response_class=HTMLResponse)
 def review_page() -> str:
-    return mockup_page("review/Event Review.html", "review")
+    return mockup_page("review/Event Review.html", "review", DEFAULT_BED_ID)
+
+
+@app.get("/bed/{bed_id}/review", response_class=HTMLResponse)
+def bed_review_page(bed_id: str) -> str:
+    return mockup_page("review/Event Review.html", "review", bed_id)
 
 
 @app.get("/state-reference", response_class=HTMLResponse)
 def state_reference_page() -> str:
-    return mockup_page("state-reference/Aida - State Reference.html", "state-reference")
+    return mockup_page("state-reference/Aida - State Reference.html", "state-reference", DEFAULT_BED_ID)
 
 
 @app.get("/v0/monitor/state")
-def monitor_state() -> dict:
-    state = store.state("bed-01", "patient-private-room-01")
-    events = store.events["bed-01"]
+def monitor_state(bed_id: str = DEFAULT_BED_ID) -> dict:
+    state = store.state(bed_id, DEFAULT_PATIENT_ID)
+    events = store.events[bed_id]
     return {
         "ok": True,
-        "room": {"id": "private-room-01", "bed_id": "bed-01", "mode": "one-bed"},
+        "room": {"id": "private-room-01", "bed_id": bed_id, "mode": "one-bed"},
         "camera": {"status": "live", "type": "PTZ/IP-ready", "fps": 4},
         "state": state.model_dump(mode="json"),
         "event_count": len(events) or 8,
@@ -291,52 +369,145 @@ def review_event(event_id: str, req: ReviewRequest) -> dict:
 
 
 @app.get("/v0/vitals/trend")
-def vitals_trend() -> dict:
+def vitals_trend(bed_id: str = DEFAULT_BED_ID, metric: str | None = None) -> dict:
+    return vitals_history_payload(bed_id, metric)
+
+
+@app.get("/v0/bed/{bed_id}/vitals/history")
+def bed_vitals_history(bed_id: str, metric: str | None = None) -> dict:
+    return vitals_history_payload(bed_id, metric)
+
+
+@app.get("/v0/state-reference")
+def state_reference() -> dict:
     return {
         "ok": True,
-        "window": "4h",
-        "vitals": {
-            "hr": [70, 70, 71, 72, 71, 72, 72, 73, 72],
-            "bp": ["120/78", "119/76", "118/76", "118/76"],
-            "spo2": [99, 99, 98, 97, 96, 95, 94],
-            "rr": [17, 18, 18, 18, 18, 18],
+        "states": {
+            "connection": ["initializing", "live", "reconnecting", "degraded_low_fps", "offline"],
+            "bed": [state.value for state in BedState] + ["bed_empty", "view_obstructed"],
+            "iv": [state.value for state in IVState],
+            "severity": [severity.value for severity in Severity],
+            "event_type": [event_type.value for event_type in EventType],
         },
-        "latest": {"hr": 72, "bp": "118/76", "spo2": 94, "rr": 18},
-        "source": "monitor_ocr",
+        "rules": {
+            "vitals": VITAL_RULES,
+            "severity_by_event": {event_type.value: severity_for(event_type).value for event_type in EventType},
+        },
+        "cases": REFERENCE_CASES,
+        "reference_docs": [
+            "/docs/archive/aida_prd_v0.1.md",
+            "/docs/archive/aida_build_guide.md",
+            "/docs/ONE_BED_REMOTE_MONITORING_PLAN.html",
+        ],
+        "reference_assets": reference_assets(),
+        "routes": {
+            "setup": "/setup",
+            "bed_setup": "/bed/{bed_id}/setup",
+            "monitor": "/monitor",
+            "review": "/review",
+            "state_reference": "/state-reference",
+        },
+    }
+
+
+@app.get("/v0/bed/{bed_id}/summary")
+def bed_summary(bed_id: str) -> dict:
+    summary = compose_summary(bed_id)
+    return {
+        "ok": True,
+        "bed_id": bed_id,
+        "summary": summary,
+        "preview": "One-bed live monitor · SpO2 trend needs review · no staff in current window",
+        "suggested_questions": suggested_questions(bed_id),
+        "grounding": {
+            "events": [event["id"] for event in APP_EVENTS[:3]],
+            "vitals": "/v0/bed/{bed_id}/vitals/history",
+            "transcripts": f"/v0/bed/{bed_id}/transcripts",
+            "state_reference": "/v0/state-reference",
+        },
     }
 
 
 @app.post("/v0/assistant/chat")
 def assistant_chat(req: AssistantRequest) -> dict:
-    answer = assistant_answer(req.message)
+    answer, model_meta = assistant_answer(req.message, req.bed_id)
     return {
         "ok": True,
         "message": req.message,
         "answer": answer,
+        **model_meta,
         "citations": [
             {"label": "Vitals OCR 06:42-07:14", "event_id": "evt-spo2-0714"},
             {"label": "Event timeline", "event_id": req.event_id or "evt-spo2-0714"},
+            {"label": "State reference", "route": "/v0/state-reference"},
         ],
         "tools_used": ["get_current_room_state", "get_event_timeline", "get_vitals_trend"],
     }
 
 
+@app.post("/v0/transcripts")
+def create_transcript(req: TranscriptRequest) -> dict:
+    record = {
+        "id": f"trn-{timestamp_slug()}",
+        "bed_id": req.bed_id,
+        "speaker": req.speaker,
+        "text": req.text,
+        "event_id": req.event_id,
+        "captured_at": (req.captured_at or datetime.now(timezone.utc)).isoformat(),
+    }
+    store.append_transcript(req.bed_id, record)
+    return {"ok": True, "transcript": record}
+
+
+@app.get("/v0/bed/{bed_id}/transcripts")
+def bed_transcripts(bed_id: str) -> dict:
+    return {"ok": True, "bed_id": bed_id, "transcripts": store.transcripts[bed_id][-50:]}
+
+
 @app.get("/v0/setup/config")
-def get_setup_config() -> dict:
-    return {"ok": True, "config": SETUP_CONFIG}
+def get_setup_config(bed_id: str = DEFAULT_BED_ID) -> dict:
+    return {"ok": True, "bed_id": bed_id, "config": setup_config_for(bed_id)}
 
 
 @app.post("/v0/setup/config")
-def save_setup_config(req: SetupConfigRequest) -> dict:
-    SETUP_CONFIG.update(req.model_dump(exclude_none=True))
-    return {"ok": True, "config": SETUP_CONFIG}
+def save_setup_config(req: SetupConfigRequest, bed_id: str = DEFAULT_BED_ID) -> dict:
+    return save_bed_setup_config(bed_id, req)
+
+
+@app.get("/v0/bed/{bed_id}/setup/config")
+def get_bed_setup_config(bed_id: str) -> dict:
+    return {"ok": True, "bed_id": bed_id, "config": setup_config_for(bed_id)}
+
+
+@app.post("/v0/bed/{bed_id}/setup/config")
+def save_bed_setup_config(bed_id: str, req: SetupConfigRequest) -> dict:
+    config = setup_config_for(bed_id)
+    config.update(req.model_dump(exclude_none=True))
+    SETUP_CONFIGS[bed_id] = config
+    return {"ok": True, "bed_id": bed_id, "config": config}
+
+
+@app.get("/v0/bed/{bed_id}/setup/next")
+def bed_setup_next(bed_id: str) -> dict:
+    config = setup_config_for(bed_id)
+    missing = [key for key in ["source_url", "bed_zone_polygon"] if not config.get(key)]
+    return {
+        "ok": True,
+        "bed_id": bed_id,
+        "ready": not missing,
+        "missing": missing,
+        "next_route": f"/bed/{bed_id}/monitor" if not missing else f"/bed/{bed_id}/setup",
+    }
 
 
 @app.post("/v0/setup/test")
 def test_setup(payload: dict[str, Any] | None = None) -> dict:
-    source = (payload or {}).get("source_url") or SETUP_CONFIG.get("source_url") or "synthetic"
+    payload = payload or {}
+    bed_id = payload.get("bed_id") or DEFAULT_BED_ID
+    source = payload.get("source_url") or setup_config_for(bed_id).get("source_url") or "synthetic"
     return {
         "ok": True,
+        "bed_id": bed_id,
         "source_url": source,
         "status": "connected",
         "codec": "H.264/MJPEG dev bridge",
@@ -392,6 +563,7 @@ def synthetic_replay(req: ReplayRequest) -> dict:
             evidence=evidence,
         )
         store.save(state, events)
+        store.append_vitals(req.bed_id, meta.analysis, meta.captured_at)
         replay_events.extend(events)
     expected = expected_events_for_manifest(
         manifest,
@@ -441,6 +613,7 @@ async def process_frame(
         evidence=evidence,
     )
     store.save(next_state, events)
+    store.append_vitals(bed_id, parsed_analysis, at)
     return {
         "ok": True,
         "state": next_state.model_dump(mode="json"),
@@ -477,14 +650,17 @@ async def video_extract(
     return VideoExtractResponse(output_dir=str(out_dir), frames=[str(path) for path in frames])
 
 
-def mockup_page(relative_path: str, page: str) -> str:
+def mockup_page(relative_path: str, page: str, bed_id: str) -> str:
     path = MOCKUPS_DIR / relative_path
     if not path.exists():
         raise HTTPException(status_code=404, detail=f"mockup not found: {relative_path}")
     html = path.read_text(encoding="utf-8")
+    base_href = "/mockups/" + str(Path(relative_path).parent).replace("\\", "/") + "/"
+    html = html.replace("<head>", f'<head><base href="{base_href}">', 1)
     bridge = f"""
 <script>
   window.AIDA_PAGE = {json.dumps(page)};
+  window.AIDA_BED_ID = {json.dumps(bed_id)};
   window.AIDA_API_BASE = "";
 </script>
 <script src="/mockups/bridge.js"></script>
@@ -499,32 +675,185 @@ def find_event(event_id: str) -> dict[str, Any]:
     raise HTTPException(status_code=404, detail=f"event not found: {event_id}")
 
 
-def assistant_answer(message: str) -> str:
+def setup_config_for(bed_id: str) -> dict[str, Any]:
+    if bed_id not in SETUP_CONFIGS:
+        SETUP_CONFIGS[bed_id] = json.loads(json.dumps(DEFAULT_SETUP_CONFIG))
+    return SETUP_CONFIGS[bed_id]
+
+
+def reference_assets() -> list[str]:
+    if not MOCKUPS_DIR.exists():
+        return []
+    return [
+        "/" + str(path.relative_to(APP_ROOT))
+        for path in sorted(MOCKUPS_DIR.rglob("*"))
+        if path.suffix.lower() in {".png", ".jpg", ".jpeg", ".svg"}
+    ]
+
+
+def demo_vitals_rows(bed_id: str) -> list[dict[str, Any]]:
+    if store.vitals[bed_id]:
+        return store.vitals[bed_id]
+    now = datetime.now(timezone.utc)
+    rows: list[dict[str, Any]] = []
+    for i, minutes_ago in enumerate(range(90, -1, -10)):
+        at = (now - timedelta(minutes=minutes_ago)).isoformat()
+        rows.extend(
+            [
+                {"kind": "hr", "value": 70 + min(i, 4), "unit": "bpm", "confidence": 0.95, "at": at},
+                {
+                    "kind": "spo2",
+                    "value": max(94, 99 - round(i * 0.7)),
+                    "unit": "%",
+                    "confidence": 0.96,
+                    "at": at,
+                },
+                {"kind": "rr", "value": 18 + (1 if i > 6 else 0), "unit": "/min", "confidence": 0.9, "at": at},
+                {
+                    "kind": "bp",
+                    "systolic": 118 + (1 if i % 3 == 0 else 0),
+                    "diastolic": 76,
+                    "unit": "mmHg",
+                    "confidence": 0.88,
+                    "at": at,
+                },
+            ]
+        )
+    return rows
+
+
+def vitals_history_payload(bed_id: str, metric: str | None = None) -> dict[str, Any]:
+    rows = demo_vitals_rows(bed_id)
+    if metric:
+        rows = [row for row in rows if row["kind"].lower() == metric.lower()]
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        grouped.setdefault(row["kind"], []).append(row)
+    return {
+        "ok": True,
+        "bed_id": bed_id,
+        "window": "90m",
+        "metric": metric,
+        "rows": rows[-120:],
+        "vitals": grouped,
+        "latest": latest_vitals(grouped),
+        "source": "monitor_ocr",
+    }
+
+
+def latest_vitals(grouped: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
+    latest: dict[str, Any] = {}
+    for kind, rows in grouped.items():
+        row = rows[-1]
+        if kind == "bp":
+            latest[kind] = f"{row.get('systolic')}/{row.get('diastolic')}"
+        else:
+            latest[kind] = row.get("value")
+    return latest
+
+
+def compose_summary(bed_id: str) -> str:
+    state = store.state(bed_id, DEFAULT_PATIENT_ID)
+    vitals = latest_vitals(vitals_history_payload(bed_id)["vitals"])
+    transcripts = store.transcripts[bed_id][-3:]
+    transcript_note = ""
+    if transcripts:
+        transcript_note = " Recent room audio: " + " ".join(t["text"] for t in transcripts)
+    return (
+        f"Bed {bed_id}: patient is currently {state.bed_state.value.replace('_', ' ') or 'in bed'}. "
+        f"Latest monitor OCR shows HR {vitals.get('hr', 72)}, BP {vitals.get('bp', '118/76')}, "
+        f"SpO2 {vitals.get('spo2', 94)}, RR {vitals.get('rr', 18)}. "
+        "The active review item is a SpO2 decline with evidence attached; no autonomous diagnosis "
+        "or treatment recommendation is being made. Staff presence, bed state, monitor OCR, IV/oxygen, "
+        f"and event review state are available as grounded context.{transcript_note}"
+    )
+
+
+def suggested_questions(bed_id: str) -> list[str]:
+    state = store.state(bed_id, DEFAULT_PATIENT_ID)
+    suggestions = [
+        "Give me the current room summary",
+        "Show evidence for the SpO2 alert",
+        "What needs review now?",
+    ]
+    if state.staff_present:
+        suggestions.append("What did staff do during the visit?")
+    else:
+        suggestions.append("When was staff last present?")
+    suggestions.append("Any oxygen, IV, or breathing concerns?")
+    return suggestions
+
+
+def assistant_answer(message: str, bed_id: str) -> tuple[str, dict[str, Any]]:
+    model_answer = ask_openai_assistant(message, bed_id)
+    if model_answer:
+        return model_answer, {
+            "model_used": True,
+            "model": os.getenv("OPENAI_ASSISTANT_MODEL") or os.getenv("OPENAI_TEXT_MODEL") or "gpt-5-mini",
+        }
     text = message.lower()
     if "staff" in text or "nurse" in text or "visit" in text:
         return (
             "No staff presence has been recorded after 05:12 AM in the current demo timeline. "
             "This answer is grounded in the staff log and room-state feed."
-        )
+        ), {"model_used": False, "fallback_reason": "model unavailable or not configured"}
     if "spo" in text or "oxygen" in text or "distress" in text:
         return (
             "SpO2 declined from 99% to 94% before the warning event. The current system treats this "
             "as a review-required trend, not an autonomous diagnosis."
-        )
+        ), {"model_used": False, "fallback_reason": "model unavailable or not configured"}
     if "review" in text or "alert" in text:
         return (
             "The highest priority review item is evt-spo2-0714: SpO2 trending down, critical severity, "
             "with monitor OCR and timeline evidence attached."
-        )
+        ), {"model_used": False, "fallback_reason": "model unavailable or not configured"}
     if "evidence" in text:
         return (
             "Evidence is available as a still frame and event-scoped stream/clip reference for each event. "
             "Open the review page to label the event and attach notes."
-        )
+        ), {"model_used": False, "fallback_reason": "model unavailable or not configured"}
     return (
-        "Current room state: patient is in bed, vitals are HR 72, BP 118/76, SpO2 94, RR 18, "
+        f"{compose_summary(bed_id)} Current room state: patient is in bed, vitals are HR 72, BP 118/76, SpO2 94, RR 18, "
         "and there is one critical vitals trend awaiting review."
-    )
+    ), {"model_used": False, "fallback_reason": "model unavailable or not configured"}
+
+
+def ask_openai_assistant(message: str, bed_id: str) -> str | None:
+    load_local_env()
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return None
+    try:
+        from openai import OpenAI
+    except ImportError:
+        return None
+    try:
+        client = OpenAI(api_key=api_key, timeout=20)
+        model = os.getenv("OPENAI_ASSISTANT_MODEL") or os.getenv("OPENAI_TEXT_MODEL") or "gpt-5-mini"
+        context = {
+            "summary": compose_summary(bed_id),
+            "events": APP_EVENTS,
+            "vitals": vitals_history_payload(bed_id)["latest"],
+            "transcripts": store.transcripts[bed_id][-5:],
+            "reference_cases": REFERENCE_CASES,
+        }
+        response = client.responses.create(
+            model=model,
+            input=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are Ask Aida for a one-bed remote patient monitoring prototype. "
+                        "Answer briefly. Ground every answer in the provided state, event, vitals, "
+                        "transcript, and reference-case context. Do not diagnose or prescribe."
+                    ),
+                },
+                {"role": "user", "content": f"Context JSON: {json.dumps(context, default=str)}\n\nQuestion: {message}"},
+            ],
+        )
+        return response.output_text.strip()
+    except Exception:
+        return None
 
 
 def parse_analysis(raw: str | None) -> FrameAnalysis:

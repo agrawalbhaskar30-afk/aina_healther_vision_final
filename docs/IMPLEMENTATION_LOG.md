@@ -56,3 +56,15 @@
 - Added a runtime bridge at `/mockups/bridge.js` instead of editing the mockup source design files.
 - Wired the bridge to the existing backend MJPEG video stream, event review endpoints, setup save/test endpoints, and an Ask Aida assistant endpoint.
 - Added in-memory event, review, setup, vitals, and assistant API stubs so the frontend workflow can run before database and model integrations are added.
+
+### Product Wiring Follow-Up
+
+- Added per-bed routes for monitor, setup/video setup, and review.
+- Added backend state-reference metadata from the runtime enums, severity mapping, vital rules, reference cases, and mockup reference assets.
+- Added per-bed setup config storage and setup readiness routing.
+- Added vitals history storage plus `/v0/bed/{bed_id}/vitals/history`; monitor vitals now open backend-backed history on click.
+- Added transcript ingestion and per-bed transcript retrieval so mic/audio capture has a backend record.
+- Added summary generation at `/v0/bed/{bed_id}/summary`; the monitor summary and suggestions refresh from this endpoint.
+- Added model-backed Ask Aida support via OpenAI when configured, with deterministic fallback when no model key/package is available.
+- Wired monitor controls for fullscreen, audio/mic capture, patient actions setup navigation, citations to review, dynamic suggestions, and chat messages.
+- Added regression tests for state references, per-bed setup isolation, transcript persistence, vitals history, and assistant fallback.

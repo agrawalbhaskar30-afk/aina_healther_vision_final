@@ -346,6 +346,8 @@ class MemoryStore:
     def __init__(self) -> None:
         self.states: dict[str, BedVisionState] = {}
         self.events: defaultdict[str, list[VisionEvent]] = defaultdict(list)
+        self.vitals: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
+        self.transcripts: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
 
     def state(self, bed_id: str, patient_id: str | None = None) -> BedVisionState:
         if bed_id not in self.states:
@@ -357,3 +359,16 @@ class MemoryStore:
     def save(self, state: BedVisionState, events: list[VisionEvent]) -> None:
         self.states[state.bed_id] = state
         self.events[state.bed_id].extend(events)
+
+    def append_vitals(self, bed_id: str, analysis: FrameAnalysis, at: datetime) -> None:
+        for kind, vital in analysis.vitals.items():
+            if vital.confidence < 0.4:
+                continue
+            row = vital.model_dump()
+            row.update({"kind": kind, "at": at.isoformat()})
+            self.vitals[bed_id].append(row)
+        del self.vitals[bed_id][:-500]
+
+    def append_transcript(self, bed_id: str, transcript: dict[str, Any]) -> None:
+        self.transcripts[bed_id].append(transcript)
+        del self.transcripts[bed_id][:-200]

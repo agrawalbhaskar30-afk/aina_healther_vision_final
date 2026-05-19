@@ -164,3 +164,80 @@ def test_latency_summary_handles_empty_and_populated_values():
     summary = latency_summary([1.0, 2.0, 3.0])
     assert summary["mean"] == 2.0
     assert summary["median"] == 2.0
+
+
+def test_state_reference_exposes_runtime_cases_and_rules():
+    client = TestClient(app)
+    response = client.get("/v0/state-reference")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["ok"] is True
+    assert "in_bed" in body["states"]["bed"]
+    assert "bed_empty" in body["states"]["bed"]
+    assert "spo2" in body["rules"]["vitals"]
+    assert body["routes"]["bed_setup"] == "/bed/{bed_id}/setup"
+
+
+def test_per_bed_setup_config_is_isolated():
+    client = TestClient(app)
+    a = client.post(
+        "/v0/bed/pytest-bed-a/setup/config",
+        json={"source_type": "rtsp", "source_url": "rtsp://camera-a", "camera_label": "A"},
+    )
+    b = client.post(
+        "/v0/bed/pytest-bed-b/setup/config",
+        json={"source_type": "synthetic", "source_url": "synthetic", "camera_label": "B"},
+    )
+    assert a.status_code == 200
+    assert b.status_code == 200
+    assert client.get("/v0/bed/pytest-bed-a/setup/config").json()["config"]["source_url"] == "rtsp://camera-a"
+    assert client.get("/v0/bed/pytest-bed-b/setup/config").json()["config"]["source_url"] == "synthetic"
+
+
+def test_transcripts_persist_and_feed_summary():
+    client = TestClient(app)
+    bed_id = "pytest-bed-transcript"
+    created = client.post(
+        "/v0/transcripts",
+        json={"bed_id": bed_id, "speaker": "room_mic", "text": "Patient asks for oxygen mask check."},
+    )
+    assert created.status_code == 200
+    transcripts = client.get(f"/v0/bed/{bed_id}/transcripts").json()["transcripts"]
+    assert transcripts[-1]["text"] == "Patient asks for oxygen mask check."
+    summary = client.get(f"/v0/bed/{bed_id}/summary").json()["summary"]
+    assert "oxygen mask check" in summary
+
+
+def test_vitals_history_grows_after_frame_ingest():
+    client = TestClient(app)
+    bed_id = "pytest-bed-vitals"
+    analysis = FrameAnalysis(
+        bed_state=BedState.IN_BED,
+        vitals={"spo2": {"value": 94, "unit": "%", "confidence": 0.96}},
+    )
+    response = client.post(
+        "/v0/frame",
+        data={
+            "bed_id": bed_id,
+            "patient_id": "pat-vitals",
+            "camera_id": "cam-1",
+            "analysis": analysis.model_dump_json(),
+        },
+    )
+    assert response.status_code == 200
+    history = client.get(f"/v0/bed/{bed_id}/vitals/history?metric=spo2").json()
+    assert history["rows"][-1]["value"] == 94
+
+
+def test_assistant_falls_back_without_model_key(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    client = TestClient(app)
+    response = client.post(
+        "/v0/assistant/chat",
+        json={"bed_id": "pytest-bed-assistant", "message": "What needs review now?"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["ok"] is True
+    assert body["model_used"] is False
+    assert "api_key" not in json.dumps(body).lower()

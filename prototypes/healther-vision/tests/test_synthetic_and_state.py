@@ -241,3 +241,62 @@ def test_assistant_falls_back_without_model_key(monkeypatch):
     assert body["ok"] is True
     assert body["model_used"] is False
     assert "api_key" not in json.dumps(body).lower()
+
+
+def test_camera_source_selection_and_stream_url():
+    client = TestClient(app)
+    bed_id = "pytest-bed-camera"
+    options = client.get(f"/v0/bed/{bed_id}/cameras")
+    assert options.status_code == 200
+    assert options.json()["source_options"][2]["id"] == "file"
+
+    selected = client.post(f"/v0/bed/{bed_id}/camera/select", json={"camera_id": "wall-wide"})
+    assert selected.status_code == 200
+    body = selected.json()
+    assert body["active"]["camera_label"] == "Wall Cam (Wide)"
+    assert f"bed_id={bed_id}" in body["stream_url"]
+
+
+def test_preferences_validate_density():
+    client = TestClient(app)
+    response = client.patch("/v0/users/me/preferences", json={"density": "compact"})
+    assert response.status_code == 200
+    assert response.json()["preferences"]["density"] == "compact"
+
+    bad = client.patch("/v0/users/me/preferences", json={"density": "crowded"})
+    assert bad.status_code == 400
+
+
+def test_test_video_upload_becomes_active_file_source():
+    client = TestClient(app)
+    bed_id = "pytest-bed-file"
+    response = client.post(
+        "/v0/monitor/test-video",
+        data={"bed_id": bed_id},
+        files={"video": ("clip.mp4", b"not a real video but acceptable for registry test", "video/mp4")},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["source_type"] == "file"
+    assert body["source_url"].startswith("upload:")
+    assert client.get(f"/v0/bed/{bed_id}/setup/config").json()["config"]["source_type"] == "file"
+
+
+def test_escalation_updates_event_and_monitor_state():
+    client = TestClient(app)
+    response = client.post(
+        "/v0/events/evt-spo2-0714/escalate",
+        json={
+            "route": "bedside_nurse",
+            "priority": "urgent",
+            "reason": "pytest escalation",
+            "due_minutes": 5,
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["event"]["status"] == "escalated"
+    assert body["escalation"]["route"] == "bedside_nurse"
+    state = client.get("/v0/monitor/state?bed_id=bed-01").json()
+    assert state["critical_count"] >= 1
+    assert state["escalation"]["status"] == "open"

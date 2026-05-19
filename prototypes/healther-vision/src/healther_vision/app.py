@@ -8,6 +8,7 @@ from io import BytesIO
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Annotated, Any
+from urllib.parse import quote
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse, StreamingResponse
@@ -60,6 +61,46 @@ DEFAULT_SETUP_CONFIG: dict[str, Any] = {
 SETUP_CONFIGS: dict[str, dict[str, Any]] = {
     DEFAULT_BED_ID: json.loads(json.dumps(DEFAULT_SETUP_CONFIG))
 }
+UPLOADED_SOURCES: dict[str, Path] = {}
+ESCALATIONS: list[dict[str, Any]] = []
+USER_PREFERENCES: dict[str, Any] = {"density": "default"}
+
+CAMERA_OPTIONS: list[dict[str, Any]] = [
+    {
+        "id": "bedside-1",
+        "label": "Bedside Cam 1",
+        "group": "live",
+        "source_type": "synthetic",
+        "source_url": "synthetic",
+        "description": "Primary bedside room camera. In this prototype it resolves to the synthetic one-bed stream unless a real source is configured.",
+    },
+    {
+        "id": "wall-wide",
+        "label": "Wall Cam (Wide)",
+        "group": "live",
+        "source_type": "synthetic",
+        "source_url": "synthetic",
+        "description": "Secondary wide-room angle for bed, staff, and equipment context.",
+    },
+]
+
+SOURCE_OPTIONS: list[dict[str, str]] = [
+    {
+        "id": "synthetic",
+        "label": "Switch to synthetic feed",
+        "description": "Use the built-in generated ICU room stream for testing without hardware.",
+    },
+    {
+        "id": "rtsp",
+        "label": "Switch to RTSP stream",
+        "description": "Use a real IP camera or NVR RTSP URL. The backend passes it to OpenCV VideoCapture.",
+    },
+    {
+        "id": "file",
+        "label": "Switch to file",
+        "description": "Upload a local video file and replay it as the monitor test feed.",
+    },
+]
 
 REFERENCE_CASES: list[dict[str, Any]] = [
     {
@@ -190,6 +231,25 @@ class SetupConfigRequest(BaseModel):
     iv_oxygen_crop: dict[str, Any] | None = None
 
 
+class CameraSelectRequest(BaseModel):
+    camera_id: str | None = None
+    source_type: str = "synthetic"
+    source_url: str = "synthetic"
+    camera_label: str | None = None
+
+
+class PreferencesRequest(BaseModel):
+    density: str | None = None
+
+
+class EscalationRequest(BaseModel):
+    route: str = "bedside_nurse"
+    priority: str = "urgent"
+    assigned_to: str | None = None
+    reason: str = "Critical monitor alert requires review."
+    due_minutes: int = Field(default=5, ge=1, le=240)
+
+
 @app.get("/health")
 def health() -> dict:
     return {"ok": True, "service": "healther-vision", "mode": "synthetic-first"}
@@ -286,10 +346,22 @@ def state_reference_page() -> str:
 def monitor_state(bed_id: str = DEFAULT_BED_ID) -> dict:
     state = store.state(bed_id, DEFAULT_PATIENT_ID)
     events = store.events[bed_id]
+    active_alerts = [event for event in APP_EVENTS if event.get("status") not in {"acknowledged", "dismissed", "cleared"}]
+    critical_count = len([event for event in active_alerts if event.get("severity") == "critical"])
+    latest_escalation = next(
+        (item for item in reversed(ESCALATIONS) if item["event_id"] in {event["id"] for event in active_alerts}),
+        None,
+    )
     return {
         "ok": True,
         "room": {"id": "private-room-01", "bed_id": bed_id, "mode": "one-bed"},
-        "camera": {"status": "live", "type": "PTZ/IP-ready", "fps": 4},
+        "camera": {
+            "status": "live",
+            "type": "PTZ/IP-ready",
+            "fps": 4,
+            "active": setup_config_for(bed_id).get("camera_label", "Bedside Cam 1"),
+            "source_type": setup_config_for(bed_id).get("source_type", "synthetic"),
+        },
         "state": state.model_dump(mode="json"),
         "event_count": len(events) or 8,
         "vitals": {"hr": 96, "bp": "124/80", "spo2": 94, "rr": 22},
@@ -303,17 +375,21 @@ def monitor_state(bed_id: str = DEFAULT_BED_ID) -> dict:
         "evidence": {"status": "clip buffer", "retention": "event-scoped"},
         "recent_events": [event.model_dump(mode="json") for event in events[-12:]],
         "app_events": APP_EVENTS,
+        "active_alerts": active_alerts,
+        "critical_count": critical_count,
+        "escalation": latest_escalation or {"status": "none", "route": None, "due_at": None},
     }
 
 
 @app.get("/v0/monitor/stream.mjpg")
 def monitor_stream(
-    source: str = "synthetic",
+    source: str = "active",
+    bed_id: str = DEFAULT_BED_ID,
     scenario: SyntheticScenario = SyntheticScenario.NORMAL,
     fps: int = 4,
 ) -> StreamingResponse:
     return StreamingResponse(
-        mjpeg_stream(source=source, scenario=scenario, fps=fps),
+        mjpeg_stream(source=resolve_stream_source(source, bed_id), scenario=scenario, fps=fps),
         media_type="multipart/x-mixed-replace; boundary=frame",
     )
 
@@ -368,6 +444,36 @@ def review_event(event_id: str, req: ReviewRequest) -> dict:
     return {"ok": True, "event": event, "review": record}
 
 
+@app.post("/v0/events/{event_id}/escalate")
+def escalate_event(event_id: str, req: EscalationRequest) -> dict:
+    event = find_event(event_id)
+    event["status"] = "escalated"
+    due_at = datetime.now(timezone.utc) + timedelta(minutes=req.due_minutes)
+    escalation = {
+        "id": f"esc-{timestamp_slug()}",
+        "event_id": event_id,
+        "route": req.route,
+        "priority": req.priority,
+        "assigned_to": req.assigned_to,
+        "reason": req.reason,
+        "status": "open",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "due_at": due_at.isoformat(),
+    }
+    event["escalation"] = escalation
+    ESCALATIONS.append(escalation)
+    REVIEW_LOG.append(
+        {
+            "event_id": event_id,
+            "action": "escalated",
+            "note": req.reason,
+            "reviewer_id": "local-demo-user",
+            "reviewed_at": escalation["created_at"],
+        }
+    )
+    return {"ok": True, "event": event, "escalation": escalation}
+
+
 @app.get("/v0/vitals/trend")
 def vitals_trend(bed_id: str = DEFAULT_BED_ID, metric: str | None = None) -> dict:
     return vitals_history_payload(bed_id, metric)
@@ -388,10 +494,18 @@ def state_reference() -> dict:
             "iv": [state.value for state in IVState],
             "severity": [severity.value for severity in Severity],
             "event_type": [event_type.value for event_type in EventType],
+            "density": ["compact", "default", "comfortable"],
+            "escalation": ["none", "open", "acknowledged", "resolved", "overdue"],
         },
         "rules": {
             "vitals": VITAL_RULES,
             "severity_by_event": {event_type.value: severity_for(event_type).value for event_type in EventType},
+            "critical_alert_handling": {
+                "critical": "Pin alert in the monitor, require human review, expose evidence, and allow escalation.",
+                "warning": "Keep visible in timeline and assistant context until acknowledged or reviewed.",
+                "info": "Chart as context and include in Ask Aida grounding.",
+            },
+            "escalation_routes": ["bedside_nurse", "remote_clinician", "rapid_response", "technical_support"],
         },
         "cases": REFERENCE_CASES,
         "reference_docs": [
@@ -500,6 +614,66 @@ def bed_setup_next(bed_id: str) -> dict:
     }
 
 
+@app.get("/v0/bed/{bed_id}/cameras")
+def bed_cameras(bed_id: str) -> dict:
+    config = setup_config_for(bed_id)
+    return {
+        "ok": True,
+        "bed_id": bed_id,
+        "active": {
+            "camera_id": config.get("camera_id", "bedside-1"),
+            "camera_label": config.get("camera_label", "Bedside Cam 1"),
+            "source_type": config.get("source_type", "synthetic"),
+            "source_url": config.get("source_url", "synthetic"),
+            "stream_url": stream_url_for(config.get("source_url", "synthetic"), bed_id),
+        },
+        "cameras": CAMERA_OPTIONS,
+        "source_options": SOURCE_OPTIONS,
+    }
+
+
+@app.post("/v0/bed/{bed_id}/camera/select")
+def select_bed_camera(bed_id: str, req: CameraSelectRequest) -> dict:
+    config = setup_config_for(bed_id)
+    match = next((camera for camera in CAMERA_OPTIONS if camera["id"] == req.camera_id), None)
+    source_url = req.source_url
+    source_type = req.source_type
+    label = req.camera_label
+    if match:
+        source_url = match["source_url"]
+        source_type = match["source_type"]
+        label = match["label"]
+    config.update(
+        {
+            "camera_id": req.camera_id or config.get("camera_id", "bedside-1"),
+            "camera_label": label or config.get("camera_label", "Bedside Cam 1"),
+            "source_type": source_type,
+            "source_url": source_url,
+        }
+    )
+    SETUP_CONFIGS[bed_id] = config
+    return {
+        "ok": True,
+        "bed_id": bed_id,
+        "active": config,
+        "stream_url": stream_url_for(config["source_url"], bed_id),
+    }
+
+
+@app.get("/v0/users/me/preferences")
+def get_preferences() -> dict:
+    return {"ok": True, "preferences": USER_PREFERENCES}
+
+
+@app.patch("/v0/users/me/preferences")
+def update_preferences(req: PreferencesRequest) -> dict:
+    if req.density:
+        if req.density not in {"compact", "default", "comfortable"}:
+            raise HTTPException(status_code=400, detail="density must be compact, default, or comfortable")
+        USER_PREFERENCES["density"] = req.density
+    return {"ok": True, "preferences": USER_PREFERENCES}
+
+
 @app.post("/v0/setup/test")
 def test_setup(payload: dict[str, Any] | None = None) -> dict:
     payload = payload or {}
@@ -514,7 +688,40 @@ def test_setup(payload: dict[str, Any] | None = None) -> dict:
         "resolution": "1920x1080",
         "fps": 24,
         "latency_ms": 180,
-        "stream_url": "/v0/monitor/stream.mjpg?source=synthetic&scenario=normal&fps=4",
+        "stream_url": stream_url_for(source, bed_id),
+    }
+
+
+@app.post("/v0/monitor/test-video")
+async def upload_test_video(
+    video: Annotated[UploadFile, File()],
+    bed_id: Annotated[str, Form()] = DEFAULT_BED_ID,
+) -> dict:
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    safe_name = Path(video.filename or "test-video.mp4").name
+    source_id = f"upload-{timestamp_slug()}-{len(UPLOADED_SOURCES) + 1}"
+    path = UPLOAD_DIR / f"{source_id}-{safe_name}"
+    with path.open("wb") as f:
+        shutil.copyfileobj(video.file, f)
+    UPLOADED_SOURCES[source_id] = path
+    config = setup_config_for(bed_id)
+    config.update(
+        {
+            "camera_id": "file",
+            "camera_label": safe_name,
+            "source_type": "file",
+            "source_url": f"upload:{source_id}",
+        }
+    )
+    SETUP_CONFIGS[bed_id] = config
+    return {
+        "ok": True,
+        "bed_id": bed_id,
+        "source_id": source_id,
+        "source_type": "file",
+        "source_url": f"upload:{source_id}",
+        "filename": safe_name,
+        "stream_url": stream_url_for(f"upload:{source_id}", bed_id),
     }
 
 
@@ -679,6 +886,24 @@ def setup_config_for(bed_id: str) -> dict[str, Any]:
     if bed_id not in SETUP_CONFIGS:
         SETUP_CONFIGS[bed_id] = json.loads(json.dumps(DEFAULT_SETUP_CONFIG))
     return SETUP_CONFIGS[bed_id]
+
+
+def stream_url_for(source_url: str, bed_id: str) -> str:
+    source = source_url or "synthetic"
+    return (
+        f"/v0/monitor/stream.mjpg?bed_id={quote(bed_id)}&source={quote(source, safe='')}"
+        "&scenario=normal&fps=4"
+    )
+
+
+def resolve_stream_source(source: str, bed_id: str) -> str:
+    if source == "active":
+        source = setup_config_for(bed_id).get("source_url", "synthetic") or "synthetic"
+    if source.startswith("upload:"):
+        source_id = source.split(":", 1)[1]
+        path = UPLOADED_SOURCES.get(source_id)
+        return str(path) if path and path.exists() else "synthetic"
+    return source
 
 
 def reference_assets() -> list[str]:
@@ -928,11 +1153,19 @@ def camera_mjpeg_stream(source: str, delay: float, *, fallback_scenario: Synthet
     if not cap.isOpened():
         yield from synthetic_mjpeg_stream(fallback_scenario, delay)
         return
+    loop_file = isinstance(capture_source, str) and Path(capture_source).exists()
+    empty_reads = 0
     try:
         while True:
             ok, frame = cap.read()
             if not ok:
+                if loop_file and empty_reads < 3:
+                    empty_reads += 1
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    time.sleep(delay)
+                    continue
                 break
+            empty_reads = 0
             ok, encoded = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 82])
             if ok:
                 yield mjpeg_part(encoded.tobytes())

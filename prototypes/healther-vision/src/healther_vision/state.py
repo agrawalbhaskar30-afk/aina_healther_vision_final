@@ -187,7 +187,12 @@ class VisionStateMachine:
                 accepted = average(kind, window)
                 previous = state.latest_accepted_vitals.get(kind)
                 state.latest_accepted_vitals[kind] = {**accepted, "accepted_at": at.isoformat()}
-                if previous != accepted:
+                previous_value = (
+                    {key: value for key, value in previous.items() if key != "accepted_at"}
+                    if previous
+                    else None
+                )
+                if previous_value != accepted:
                     events.append(
                         event(
                             EventType.VITAL_READING_ACCEPTED,
@@ -372,3 +377,28 @@ class MemoryStore:
     def append_transcript(self, bed_id: str, transcript: dict[str, Any]) -> None:
         self.transcripts[bed_id].append(transcript)
         del self.transcripts[bed_id][:-200]
+
+    def dump(self) -> dict[str, Any]:
+        return {
+            "states": {bed_id: state.model_dump(mode="json") for bed_id, state in self.states.items()},
+            "events": {
+                bed_id: [event.model_dump(mode="json") for event in events]
+                for bed_id, events in self.events.items()
+            },
+            "vitals": {bed_id: rows for bed_id, rows in self.vitals.items()},
+            "transcripts": {bed_id: rows for bed_id, rows in self.transcripts.items()},
+        }
+
+    def load(self, payload: dict[str, Any]) -> None:
+        self.states.clear()
+        self.events.clear()
+        self.vitals.clear()
+        self.transcripts.clear()
+        for bed_id, state in payload.get("states", {}).items():
+            self.states[bed_id] = BedVisionState.model_validate(state)
+        for bed_id, events in payload.get("events", {}).items():
+            self.events[bed_id].extend(VisionEvent.model_validate(event) for event in events)
+        for bed_id, rows in payload.get("vitals", {}).items():
+            self.vitals[bed_id].extend(rows)
+        for bed_id, transcripts in payload.get("transcripts", {}).items():
+            self.transcripts[bed_id].extend(transcripts)

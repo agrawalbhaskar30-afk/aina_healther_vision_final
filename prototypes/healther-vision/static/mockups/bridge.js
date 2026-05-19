@@ -7,6 +7,7 @@
   let localCameraStream = null;
   let detectorFrameTimer = null;
   let statePollTimer = null;
+  let sourceMenuHandledUntil = 0;
 
   const postJson = async (url, body) => {
     const res = await fetch(api + url, {
@@ -82,6 +83,44 @@
     }[ch]));
   }
 
+  function storageGet(key) {
+    try { return window.localStorage?.getItem(key); } catch { return null; }
+  }
+
+  function storageSet(key, value) {
+    try { window.localStorage?.setItem(key, value); } catch {}
+  }
+
+  function setCameraLabel(label) {
+    document.querySelector(".cam-trigger span:last-child")?.replaceChildren(document.createTextNode(label));
+    document.querySelectorAll(".cam-menu .item").forEach((item) => {
+      const text = item.textContent.replace(/\s+/g, " ").trim();
+      const isActive = text.includes(label);
+      item.classList.toggle("active", isActive);
+      const check = item.querySelector(".check");
+      if (check) check.textContent = isActive ? "✓" : "";
+    });
+  }
+
+  function closeCameraMenu() {
+    document.querySelector(".popover-catch")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+  }
+
+  function renderAudioMutedState(button) {
+    const target = button || document.querySelector('button[aria-label="Audio"]');
+    if (!target) return;
+    const muted = storageGet(`aida-audio-muted-${bedId}`) !== "false";
+    target.classList.toggle("is-muted", muted);
+    target.setAttribute("aria-pressed", muted ? "false" : "true");
+    target.title = muted ? "Room microphone muted" : "Room microphone listening";
+  }
+
+  function setAudioMuted(muted) {
+    storageSet(`aida-audio-muted-${bedId}`, muted ? "true" : "false");
+    renderAudioMutedState();
+  }
+
   function addBridgeStyles() {
     if (document.getElementById("aida-bridge-styles")) return;
     const style = document.createElement("style");
@@ -116,6 +155,7 @@
       .aida-bridge-suggestions{display:flex;gap:6px;flex-wrap:wrap;padding:0 12px 8px}
       .aida-bridge-suggestions button{width:auto;border:1px solid var(--border,rgba(148,163,184,.18));font-size:12px}
       .aida-bridge-fullscreen{background:#020617!important}
+      .vid-iconbtn.is-muted{opacity:.72;box-shadow:0 0 0 1px rgba(244,63,94,.55) inset!important}
       :root[data-density="compact"] .vital-mini{min-height:58px!important;padding:8px!important}
       :root[data-density="comfortable"] .vital-mini{min-height:92px!important;padding:14px!important}
       @media (max-width: 820px){.aida-bridge-modal{width:calc(100vw - 20px);max-width:calc(100vw - 20px)}.aida-bridge-vitals-layout{grid-template-columns:1fr}.aida-bridge-graph{height:260px}}
@@ -299,8 +339,10 @@
     const body = {
       interval_seconds: options.interval_seconds || 2,
       scenario: options.scenario || "normal",
-      use_cloud_vlm: Boolean(options.use_cloud_vlm),
     };
+    if (Object.prototype.hasOwnProperty.call(options, "use_cloud_vlm")) {
+      body.use_cloud_vlm = Boolean(options.use_cloud_vlm);
+    }
     const data = await postJson(`/v0/bed/${encodeURIComponent(bedId)}/detector/start`, body);
     renderMonitorState({ detection: data.detector });
     if (data.detector?.status === "awaiting_browser_frames") startLocalDetectorSampler();
@@ -472,7 +514,8 @@
       video.style.display = "block";
       if (img) img.style.display = "none";
       await video.play().catch(() => {});
-      document.querySelector(".cam-trigger span:last-child")?.replaceChildren(document.createTextNode("Bedside Cam 1"));
+      storageSet(`aida-source-${bedId}`, "bedside-1");
+      setCameraLabel("Bedside Cam 1");
       await startPostDetection();
       addToast("Tablet camera is live for Bedside Cam 1.");
     } catch (err) {
@@ -500,7 +543,8 @@
         const data = await postForm("/v0/monitor/test-video", form);
         if (!data.ok) throw new Error("upload failed");
         updateStream(data.stream_url);
-        document.querySelector(".cam-trigger span:last-child")?.replaceChildren(document.createTextNode(file.name));
+        storageSet(`aida-source-${bedId}`, "file");
+        setCameraLabel(file.name);
         await startPostDetection();
         addToast("Test video feed is now active.");
       } catch (err) {
@@ -513,26 +557,41 @@
     return input;
   }
 
+  function sourceIdFromText(text) {
+    const cleaned = text.replace(/\s+/g, " ").trim().toLowerCase();
+    if (cleaned.includes("bedside cam 1")) return "bedside-1";
+    if (cleaned.includes("wall cam")) return "wall-wide";
+    if (cleaned.includes("synthetic")) return "synthetic";
+    if (cleaned.includes("rtsp")) return "rtsp";
+    if (cleaned.includes("file")) return "file";
+    return "";
+  }
+
   async function selectCameraSource(text) {
-    const cleaned = text.replace(/\s+/g, " ").trim();
+    const sourceId = sourceIdFromText(text);
     try {
-      if (cleaned.includes("Bedside Cam 1")) {
+      closeCameraMenu();
+      if (sourceId === "bedside-1") {
         await startTabletCamera();
-      } else if (cleaned.includes("Wall Cam")) {
+      } else if (sourceId === "wall-wide") {
         const data = await postJson(`/v0/bed/${encodeURIComponent(bedId)}/camera/select`, { camera_id: "wall-wide" });
         updateStream(data.stream_url);
+        storageSet(`aida-source-${bedId}`, "wall-wide");
+        setCameraLabel("Wall Cam (Wide)");
         await startPostDetection();
         addToast("Wall Cam selected.");
-      } else if (cleaned.includes("synthetic")) {
+      } else if (sourceId === "synthetic") {
         const data = await postJson(`/v0/bed/${encodeURIComponent(bedId)}/camera/select`, {
           source_type: "synthetic",
           source_url: "synthetic",
           camera_label: "Synthetic ICU feed",
         });
         updateStream(data.stream_url);
+        storageSet(`aida-source-${bedId}`, "synthetic");
+        setCameraLabel("Synthetic ICU feed");
         await startPostDetection();
         addToast("Synthetic feed selected.");
-      } else if (cleaned.includes("RTSP")) {
+      } else if (sourceId === "rtsp") {
         const url = window.prompt("Paste RTSP/HTTP camera URL");
         if (!url) return;
         const data = await postJson(`/v0/bed/${encodeURIComponent(bedId)}/camera/select`, {
@@ -541,9 +600,11 @@
           camera_label: "RTSP stream",
         });
         updateStream(data.stream_url);
+        storageSet(`aida-source-${bedId}`, "rtsp");
+        setCameraLabel("RTSP stream");
         await startPostDetection();
         addToast("RTSP stream selected.");
-      } else if (cleaned.includes("file")) {
+      } else if (sourceId === "file") {
         ensureTestFileInput().click();
       }
     } catch (err) {
@@ -662,6 +723,7 @@
   function wireMonitor() {
     addBridgeStyles();
     ensureTestFileInput();
+    renderAudioMutedState();
     getJson("/v0/users/me/preferences")
       .then((data) => {
         if (data?.preferences?.density) document.documentElement.dataset.density = data.preferences.density;
@@ -717,6 +779,19 @@
     startPostDetection().catch(() => addToast("Post-detection could not start."));
     startMonitorPolling();
 
+    document.addEventListener("pointerdown", (event) => {
+      const cameraItem = event.target.closest(".cam-menu .item");
+      if (!cameraItem) return;
+      const text = cameraItem.textContent || "";
+      const sourceId = sourceIdFromText(text);
+      if (sourceId !== "file") return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      sourceMenuHandledUntil = Date.now() + 800;
+      closeCameraMenu();
+      ensureTestFileInput().click();
+    }, true);
+
     document.addEventListener("click", (event) => {
       if (event.target.closest(".aida-cite")) {
         event.preventDefault();
@@ -746,6 +821,11 @@
       }
       const cameraItem = event.target.closest(".cam-menu .item");
       if (cameraItem) {
+        if (Date.now() < sourceMenuHandledUntil) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          return;
+        }
         const text = cameraItem.textContent;
         if (text.includes("file")) {
           event.preventDefault();
@@ -796,6 +876,12 @@
       }
       if (button.getAttribute("aria-label") === "Audio") {
         event.preventDefault();
+        const muted = storageGet(`aida-audio-muted-${bedId}`) !== "false";
+        setAudioMuted(!muted);
+        if (!muted) {
+          addToast("Room microphone muted.");
+          return;
+        }
         startAudioCapture();
       }
       if (button.getAttribute("aria-label") === "More patient actions" || button.getAttribute("aria-label") === "Shortcuts") {
@@ -936,6 +1022,7 @@
 
   function wireReview() {
     const eventId = new URLSearchParams(window.location.search).get("event") || "evt-spo2-0714";
+    hydrateReviewEvent(eventId).catch(() => {});
     document.addEventListener("click", async (event) => {
       const button = event.target.closest("button");
       if (!button) return;
@@ -966,6 +1053,40 @@
     const back = [...document.querySelectorAll("button")]
       .find((button) => button.textContent.includes("Back to monitor"));
     if (back) back.addEventListener("click", () => { window.location.href = `/bed/${encodeURIComponent(bedId)}/monitor`; });
+  }
+
+  async function hydrateReviewEvent(eventId) {
+    const data = await getJson(`/v0/events/${encodeURIComponent(eventId)}`);
+    if (!data.ok || !data.event) return;
+    const event = data.event;
+    const apply = () => {
+      const title = document.querySelector(".event-strip h1");
+      if (!title) return false;
+      const type = document.querySelector(".event-strip .body .mono");
+      const fired = [...document.querySelectorAll(".event-strip .mono.small,.event-strip .small")]
+        .find((node) => node.textContent.includes("Fired"));
+      const status = document.querySelector(".status-pill");
+      const tag = document.querySelector(".event-strip .tag");
+      title.textContent = event.label || event.message || event.type || eventId;
+      if (type) type.textContent = event.type || "DETECTION_EVENT";
+      if (fired) fired.textContent = `Fired ${event.time || event.created_at || "now"}`;
+      if (status && event.status) status.lastChild.textContent = event.status.replaceAll("_", " ");
+      if (tag && event.severity) {
+        tag.className = `tag ${event.severity}`;
+        tag.lastChild.textContent = event.severity;
+      }
+      const interpretation = document.querySelector(".rail .card p");
+      if (interpretation) {
+        interpretation.textContent = event.vlm?.summary || event.description || "Review this detection event with the attached evidence and room context.";
+      }
+      const evidenceFrame = document.querySelector(".evidence-frame img,.evidence img");
+      if (evidenceFrame && event.evidence?.still) evidenceFrame.src = event.evidence.still;
+      return true;
+    };
+    for (let i = 0; i < 8; i += 1) {
+      if (apply()) return;
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
   }
 
   ready(() => {

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import sys
 import time
 from io import BytesIO
 from datetime import datetime, timedelta, timezone
@@ -31,6 +32,7 @@ from .models import (
     SyntheticScenario,
     VisionEvent,
 )
+from .medplum import MedplumClient, resources_for_detection
 from .post_detection import (
     DetectorRuntime,
     analyze_frame_cv,
@@ -45,6 +47,7 @@ load_local_env()
 DATA_DIR = Path("data")
 GENERATED_DIR = DATA_DIR / "generated"
 UPLOAD_DIR = DATA_DIR / "uploads"
+RUNTIME_STATE_PATH = DATA_DIR / "runtime_state.json"
 APP_ROOT = Path(__file__).resolve().parents[2]
 MOCKUPS_DIR = APP_ROOT / "static" / "mockups"
 
@@ -76,6 +79,7 @@ USER_PREFERENCES: dict[str, Any] = {"density": "default", "theme": "light"}
 DETECTOR_RUNTIMES: dict[str, DetectorRuntime] = {}
 DETECTOR_THREADS: dict[str, Thread] = {}
 DETECTOR_STOPS: dict[str, ThreadEvent] = {}
+MEDPLUM_SYNC_LOG: list[dict[str, Any]] = []
 
 CAMERA_OPTIONS: list[dict[str, Any]] = [
     {
@@ -192,6 +196,7 @@ APP_EVENTS: list[dict[str, Any]] = [
         },
     },
 ]
+DEFAULT_APP_EVENTS = json.loads(json.dumps(APP_EVENTS))
 REVIEW_LOG: list[dict[str, Any]] = []
 
 
@@ -266,7 +271,7 @@ class EscalationRequest(BaseModel):
 class DetectorStartRequest(BaseModel):
     interval_seconds: float = Field(default=2.0, ge=0.5, le=30)
     scenario: SyntheticScenario = SyntheticScenario.NORMAL
-    use_cloud_vlm: bool = False
+    use_cloud_vlm: bool | None = None
 
 
 @app.get("/health")
@@ -405,7 +410,7 @@ def monitor_state(bed_id: str = DEFAULT_BED_ID) -> dict:
         },
         "evidence": {"status": "clip buffer", "retention": "event-scoped"},
         "recent_events": [event.model_dump(mode="json") for event in events[-12:]],
-        "app_events": APP_EVENTS,
+        "app_events": events_for_bed(bed_id),
         "active_alerts": active_alerts,
         "critical_count": critical_count,
         "detection": detector,
@@ -453,6 +458,7 @@ def create_event(event_payload: dict[str, Any]) -> dict:
         **event_payload,
     }
     APP_EVENTS.insert(0, event)
+    persist_runtime_state()
     return {"ok": True, "event": event}
 
 
@@ -473,6 +479,7 @@ def review_event(event_id: str, req: ReviewRequest) -> dict:
         "reviewed_at": datetime.now(timezone.utc).isoformat(),
     }
     REVIEW_LOG.append(record)
+    persist_runtime_state()
     return {"ok": True, "event": event, "review": record}
 
 
@@ -503,6 +510,7 @@ def escalate_event(event_id: str, req: EscalationRequest) -> dict:
             "reviewed_at": escalation["created_at"],
         }
     )
+    persist_runtime_state()
     return {"ok": True, "event": event, "escalation": escalation}
 
 
@@ -524,6 +532,7 @@ def clear_bed_alerts(bed_id: str) -> dict:
                     "reviewed_at": cleared_at,
                 }
             )
+    persist_runtime_state()
     return {
         "ok": True,
         "bed_id": bed_id,
@@ -550,14 +559,16 @@ def start_detector(bed_id: str, req: DetectorStartRequest | None = None) -> dict
         bed_id,
         interval_seconds=req.interval_seconds,
         scenario=req.scenario,
-        use_cloud_vlm=req.use_cloud_vlm,
+        use_cloud_vlm=effective_cloud_vlm_enabled(req.use_cloud_vlm),
     )
+    persist_runtime_state()
     return {"ok": True, "detector": detector_status_payload(bed_id)}
 
 
 @app.post("/v0/bed/{bed_id}/detector/stop")
 def stop_detector(bed_id: str) -> dict:
     stop_detector_runtime(bed_id)
+    persist_runtime_state()
     return {"ok": True, "detector": detector_status_payload(bed_id)}
 
 
@@ -684,6 +695,7 @@ def create_transcript(req: TranscriptRequest) -> dict:
         "captured_at": (req.captured_at or datetime.now(timezone.utc)).isoformat(),
     }
     store.append_transcript(req.bed_id, record)
+    persist_runtime_state()
     return {"ok": True, "transcript": record}
 
 
@@ -712,6 +724,7 @@ def save_bed_setup_config(bed_id: str, req: SetupConfigRequest) -> dict:
     config = setup_config_for(bed_id)
     config.update(req.model_dump(exclude_none=True))
     SETUP_CONFIGS[bed_id] = config
+    persist_runtime_state()
     return {"ok": True, "bed_id": bed_id, "config": config}
 
 
@@ -766,6 +779,7 @@ def select_bed_camera(bed_id: str, req: CameraSelectRequest) -> dict:
         }
     )
     SETUP_CONFIGS[bed_id] = config
+    persist_runtime_state()
     return {
         "ok": True,
         "bed_id": bed_id,
@@ -789,6 +803,7 @@ def update_preferences(req: PreferencesRequest) -> dict:
         if req.theme not in {"light", "dark"}:
             raise HTTPException(status_code=400, detail="theme must be light or dark")
         USER_PREFERENCES["theme"] = req.theme
+    persist_runtime_state()
     return {"ok": True, "preferences": USER_PREFERENCES}
 
 
@@ -832,6 +847,7 @@ async def upload_test_video(
         }
     )
     SETUP_CONFIGS[bed_id] = config
+    persist_runtime_state()
     return {
         "ok": True,
         "bed_id": bed_id,
@@ -865,6 +881,7 @@ async def upload_audio_clip(
         "audio_path": str(path),
     }
     store.append_transcript(bed_id, record)
+    persist_runtime_state()
     return {
         "ok": True,
         "bed_id": bed_id,
@@ -925,6 +942,7 @@ def synthetic_replay(req: ReplayRequest) -> dict:
         store.save(state, events)
         store.append_vitals(req.bed_id, meta.analysis, meta.captured_at)
         replay_events.extend(events)
+    persist_runtime_state()
     expected = expected_events_for_manifest(
         manifest,
         bed_id=req.bed_id,
@@ -974,11 +992,22 @@ async def process_frame(
     )
     store.save(next_state, events)
     store.append_vitals(bed_id, parsed_analysis, at)
+    for vision_event in events:
+        upsert_app_event(app_event_from_vision_event(vision_event))
+    medplum_result = sync_detection_to_medplum(
+        bed_id=bed_id,
+        patient_id=patient_id,
+        analysis=parsed_analysis,
+        events=events,
+        evidence=evidence,
+    )
+    persist_runtime_state()
     return {
         "ok": True,
         "state": next_state.model_dump(mode="json"),
         "events": [event.model_dump(mode="json") for event in events],
         "analysis": parsed_analysis.model_dump(mode="json"),
+        "medplum": medplum_result,
     }
 
 
@@ -1041,6 +1070,74 @@ def setup_config_for(bed_id: str) -> dict[str, Any]:
     return SETUP_CONFIGS[bed_id]
 
 
+def persistence_enabled() -> bool:
+    return os.getenv("HEALTHER_VISION_PERSISTENCE", "1") != "0" and "pytest" not in sys.modules
+
+
+def persist_runtime_state() -> None:
+    if not persistence_enabled():
+        return
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "version": 1,
+        "saved_at": datetime.now(timezone.utc).isoformat(),
+        "setup_configs": SETUP_CONFIGS,
+        "uploaded_sources": {source_id: str(path) for source_id, path in UPLOADED_SOURCES.items()},
+        "escalations": ESCALATIONS,
+        "user_preferences": USER_PREFERENCES,
+        "app_events": APP_EVENTS,
+        "review_log": REVIEW_LOG,
+        "medplum_sync_log": MEDPLUM_SYNC_LOG,
+        "memory": store.dump(),
+        "detectors": {bed_id: runtime.as_dict() for bed_id, runtime in DETECTOR_RUNTIMES.items()},
+    }
+    tmp = RUNTIME_STATE_PATH.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+    tmp.replace(RUNTIME_STATE_PATH)
+
+
+def load_runtime_state() -> None:
+    if not persistence_enabled() or not RUNTIME_STATE_PATH.exists():
+        return
+    try:
+        payload = json.loads(RUNTIME_STATE_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return
+    SETUP_CONFIGS.clear()
+    SETUP_CONFIGS.update(payload.get("setup_configs") or {DEFAULT_BED_ID: json.loads(json.dumps(DEFAULT_SETUP_CONFIG))})
+    UPLOADED_SOURCES.clear()
+    for source_id, path in (payload.get("uploaded_sources") or {}).items():
+        source_path = Path(path)
+        if source_path.exists():
+            UPLOADED_SOURCES[source_id] = source_path
+    ESCALATIONS.clear()
+    ESCALATIONS.extend(payload.get("escalations") or [])
+    USER_PREFERENCES.clear()
+    USER_PREFERENCES.update(payload.get("user_preferences") or {"density": "default", "theme": "light"})
+    APP_EVENTS.clear()
+    APP_EVENTS.extend(payload.get("app_events") or [])
+    REVIEW_LOG.clear()
+    REVIEW_LOG.extend(payload.get("review_log") or [])
+    MEDPLUM_SYNC_LOG.clear()
+    MEDPLUM_SYNC_LOG.extend(payload.get("medplum_sync_log") or [])
+    store.load(payload.get("memory") or {})
+    DETECTOR_RUNTIMES.clear()
+    for bed_id, item in (payload.get("detectors") or {}).items():
+        runtime = DetectorRuntime(
+            bed_id=bed_id,
+            status="stopped" if item.get("status") == "running" else item.get("status", "stopped"),
+            source_type=item.get("source_type", "synthetic"),
+            source_url=item.get("source_url", "synthetic"),
+            camera_label=item.get("camera_label", "Bedside Cam 1"),
+            scenario=item.get("scenario", "normal"),
+            interval_seconds=item.get("interval_seconds", 2.0),
+            use_cloud_vlm=bool(item.get("use_cloud_vlm")),
+        )
+        DETECTOR_RUNTIMES[bed_id] = runtime
+    if not APP_EVENTS:
+        APP_EVENTS.extend(json.loads(json.dumps(DEFAULT_APP_EVENTS)))
+
+
 def stream_url_for(source_url: str, bed_id: str) -> str:
     source = source_url or "synthetic"
     return (
@@ -1086,14 +1183,35 @@ def detector_status_payload(bed_id: str) -> dict[str, Any]:
     if not runtime:
         runtime = detector_runtime_from_config(bed_id)
     payload = runtime.as_dict()
+    medplum = MedplumClient()
     payload["capabilities"] = {
         "local_cv": True,
         "browser_frame_ingest": True,
         "file_rtsp_background_loop": True,
-        "cloud_vlm_confirmation": bool(os.getenv("OPENAI_API_KEY") or os.getenv("GEMINI_API_KEY")),
-        "continuous_medplum_sync": False,
+        "cloud_vlm_confirmation": cloud_vlm_configured(),
+        "continuous_medplum_sync": medplum.enabled(),
     }
     return payload
+
+
+def cloud_vlm_configured() -> bool:
+    load_local_env()
+    return bool(
+        os.getenv("OPENAI_API_KEY")
+        or os.getenv("GEMINI_API_KEY")
+        or os.getenv("GOOGLE_API_KEY")
+    )
+
+
+def effective_cloud_vlm_enabled(requested: bool | None) -> bool:
+    if requested is not None:
+        return requested and cloud_vlm_configured()
+    if "pytest" in sys.modules:
+        return False
+    explicit = os.getenv("HEALTHER_VISION_USE_CLOUD_VLM")
+    if explicit is not None:
+        return cloud_vlm_configured() and explicit.strip().lower() in {"1", "true", "yes", "on"}
+    return cloud_vlm_configured()
 
 
 def start_detector_runtime(
@@ -1256,6 +1374,14 @@ def process_detection_frame(
     runtime.stats.last_analysis = analysis
     for vision_event in events:
         upsert_app_event(app_event_from_vision_event(vision_event))
+    medplum_result = sync_detection_to_medplum(
+        bed_id=bed_id,
+        patient_id=patient_id,
+        analysis=analysis,
+        events=events,
+        evidence=evidence,
+    )
+    persist_runtime_state()
     return {
         "state": next_state.model_dump(mode="json"),
         "analysis": analysis.model_dump(mode="json"),
@@ -1263,6 +1389,7 @@ def process_detection_frame(
         "app_events": [app_event_from_vision_event(event) for event in events],
         "detector": runtime.as_dict(),
         "evidence": evidence.model_dump(mode="json"),
+        "medplum": medplum_result,
     }
 
 
@@ -1335,6 +1462,10 @@ def event_belongs_to_bed(event: dict[str, Any], bed_id: str) -> bool:
     return event.get("bed_id") in {None, bed_id}
 
 
+def events_for_bed(bed_id: str) -> list[dict[str, Any]]:
+    return [event for event in APP_EVENTS if event_belongs_to_bed(event, bed_id)]
+
+
 def evidence_url(evidence: Evidence | None) -> str:
     if not evidence or not evidence.path:
         return "/v0/monitor/frame.jpg?scenario=normal"
@@ -1378,19 +1509,68 @@ def event_description(event: VisionEvent) -> str:
 
 
 def medplum_status_payload() -> dict[str, Any]:
-    configured = bool(os.getenv("MEDPLUM_BASE_URL") and os.getenv("MEDPLUM_CLIENT_ID"))
+    client = MedplumClient()
+    status = client.status()
+    enabled = client.enabled()
+    configured = status["configured"]
     return {
         "configured": configured,
-        "status": "configured-not-syncing" if configured else "planned-fhir-shape",
-        "base_url_set": bool(os.getenv("MEDPLUM_BASE_URL")),
-        "client_id_set": bool(os.getenv("MEDPLUM_CLIENT_ID")),
+        "enabled": enabled,
+        "status": "sync-enabled" if enabled else ("configured-disabled" if configured else "not-configured"),
+        **status,
         "resources": ["Patient", "Encounter", "Observation", "DocumentReference", "Task", "Communication"],
-        "notes": (
-            "FHIR resource mapping is scaffolded, but no Medplum writes are enabled yet."
-            if not configured
-            else "Credentials are present; write/sync worker still needs to be enabled explicitly."
-        ),
+        "last_sync": MEDPLUM_SYNC_LOG[-1] if MEDPLUM_SYNC_LOG else None,
+        "sync_log": MEDPLUM_SYNC_LOG[-20:],
+        "notes": "Detection frames are mapped to FHIR Observations, Tasks, and DocumentReferences.",
     }
+
+
+def sync_detection_to_medplum(
+    *,
+    bed_id: str,
+    patient_id: str | None,
+    analysis: FrameAnalysis,
+    events: list[VisionEvent],
+    evidence: Evidence | None,
+) -> dict[str, Any]:
+    client = MedplumClient()
+    if not client.enabled():
+        return {"enabled": False, "synced": 0, "skipped": True}
+    resources = resources_for_detection(
+        bed_id=bed_id,
+        patient_id=patient_id,
+        analysis=analysis,
+        events=events,
+        evidence=evidence,
+    )
+    if not resources:
+        return {"enabled": True, "synced": 0, "skipped": True, "reason": "no resources"}
+    synced = 0
+    errors: list[str] = []
+    resource_types: list[str] = []
+    for resource in resources:
+        resource_types.append(str(resource.get("resourceType", "Unknown")))
+        try:
+            result = client.create_resource(resource)
+        except Exception as exc:
+            errors.append(str(exc)[:500])
+            continue
+        if result.get("ok"):
+            synced += 1
+        elif not result.get("skipped"):
+            errors.append(str(result.get("error") or result)[:500])
+    record = {
+        "bed_id": bed_id,
+        "patient_id": patient_id,
+        "synced": synced,
+        "attempted": len(resources),
+        "resource_types": resource_types,
+        "errors": errors[:5],
+        "at": datetime.now(timezone.utc).isoformat(),
+    }
+    MEDPLUM_SYNC_LOG.append(record)
+    del MEDPLUM_SYNC_LOG[:-200]
+    return {"enabled": True, **record}
 
 
 def reference_assets() -> list[str]:
@@ -1544,7 +1724,7 @@ def ask_openai_assistant(message: str, bed_id: str) -> str | None:
         model = os.getenv("OPENAI_ASSISTANT_MODEL") or os.getenv("OPENAI_TEXT_MODEL") or "gpt-5-mini"
         context = {
             "summary": compose_summary(bed_id),
-            "events": APP_EVENTS,
+            "events": events_for_bed(bed_id),
             "vitals": vitals_history_payload(bed_id)["latest"],
             "transcripts": store.transcripts[bed_id][-5:],
             "reference_cases": REFERENCE_CASES,
@@ -1616,6 +1796,9 @@ def parse_dt(value: str | None) -> datetime:
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=f"invalid captured_at: {value}") from exc
     return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
+
+load_runtime_state()
 
 
 def timestamp_slug() -> str:

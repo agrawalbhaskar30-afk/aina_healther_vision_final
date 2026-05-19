@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 from healther_vision.imagegen_eval import evaluate_imagegen_report, imagegen_ground_truths, latency_summary
 from healther_vision.app import app
+from healther_vision.medplum import MedplumSettings, MedplumClient, resources_for_detection
 from healther_vision.models import BedState, CameraRole, EventType, FrameAnalysis, IVState, SyntheticScenario
 from healther_vision.state import VisionStateMachine, fresh_state
 from healther_vision.synthetic import analysis_for, generate_scenario, render_frame
@@ -66,6 +67,28 @@ def test_vitals_alert_after_repeated_abnormal_readings():
             camera_id="cam-1",
         )
     assert EventType.VITALS_OUT_OF_RANGE in {e.event_type for e in events}
+
+
+def test_stable_vital_readings_do_not_rechart_every_frame():
+    machine = VisionStateMachine()
+    state = fresh_state("B4", "pat-demo")
+    t0 = datetime.now(timezone.utc)
+    emitted: list[EventType] = []
+    analysis = FrameAnalysis(
+        bed_state=BedState.IN_BED,
+        vitals={"hr": {"value": 72, "unit": "bpm", "confidence": 0.95}},
+    )
+    for i in range(8):
+        state, events = machine.process(
+            state,
+            analysis,
+            at=t0 + timedelta(seconds=i),
+            bed_id="B4",
+            patient_id="pat-demo",
+            camera_id="cam-1",
+        )
+        emitted.extend(event.event_type for event in events)
+    assert emitted.count(EventType.VITAL_READING_ACCEPTED) == 1
 
 
 def test_iv_near_empty_event():
@@ -343,6 +366,45 @@ def test_medplum_status_exposes_planned_fhir_shape():
     assert body["ok"] is True
     assert "Observation" in body["resources"]
     assert "api_key" not in json.dumps(body).lower()
+
+
+def test_medplum_resource_mapping_for_detection_events():
+    machine = VisionStateMachine()
+    state = fresh_state("bed-medplum", "pat-medplum")
+    analysis = FrameAnalysis(
+        bed_state=BedState.IN_BED,
+        vitals={
+            "hr": {"value": 128, "unit": "bpm", "confidence": 0.91},
+            "spo2": {"value": 88, "unit": "%", "confidence": 0.93},
+        },
+    )
+    events = []
+    now = datetime.now(timezone.utc)
+    for i in range(3):
+        state, events = machine.process(
+            state,
+            analysis,
+            at=now + timedelta(seconds=i),
+            bed_id="bed-medplum",
+            patient_id="pat-medplum",
+            camera_id="cam-1",
+        )
+    resources = resources_for_detection(
+        bed_id="bed-medplum",
+        patient_id="pat-medplum",
+        analysis=analysis,
+        events=events,
+        evidence=None,
+    )
+    assert any(item["resourceType"] == "Observation" for item in resources)
+    assert any(item["resourceType"] == "Task" for item in resources)
+    assert "api_key" not in json.dumps(resources).lower()
+
+
+def test_medplum_enabled_requires_credentials_even_when_requested(monkeypatch):
+    monkeypatch.setenv("MEDPLUM_SYNC_ENABLED", "1")
+    client = MedplumClient(MedplumSettings(base_url="https://api.medplum.com"))
+    assert client.enabled() is False
 
 
 def test_detector_frame_local_cv_creates_reviewable_vitals_event():
